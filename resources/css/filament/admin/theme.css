@@ -1,0 +1,17 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+/* هنا تكتب تخصيصاتك الخاصة */
+
+:root {
+  --primary-500: #4f46e5; /* تغيير اللون الأساسي */
+  --sidebar-bg: #1e293b;   /* لون خلفية السايدبار */
+}
+
+/* مثال لتلوين السايدبار */
+.sidebar {
+  background-color: var(--sidebar-bg);
+}
+
+/* يمكن إضافة تخصيصات Tailwind Utilities */
+
+@config 'tailwind.config.js';

@@ -1,0 +1,22 @@
+{
+  "name": "alkzali",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "tailwind:init": "npx tailwindcss init"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
+    "autoprefixer": "^10.4.21",
+    "chart.js": "^4.4.9",
+    "laravel-vite-plugin": "^1.0.0",
+    "postcss": "^8.5.5",
+    "postcss-nesting": "^13.0.2",
+    "tailwindcss": "^3.4.17",
+    "vite": "^5.0.0"
+  }
+}
