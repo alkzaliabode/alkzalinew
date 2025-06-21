@@ -5,6 +5,9 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\SanitationFacilityTaskResource\Pages;
 use App\Models\SanitationFacilityTask;
 use App\Models\Employee;
+use App\Models\Unit;
+use App\Models\UnitGoal; // ✅ هام: استيراد موديل UnitGoal
+
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Components\Section;
@@ -21,6 +24,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportBulkAction;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
+use Illuminate\Support\HtmlString;
 
 class SanitationFacilityTaskResource extends Resource
 {
@@ -45,7 +49,7 @@ class SanitationFacilityTaskResource extends Resource
                                     ->label('التاريخ')
                                     ->default(now())
                                     ->columnSpan(1),
-                                    
+
                                 Select::make('shift')
                                     ->options([
                                         'صباحي' => 'صباحي',
@@ -53,9 +57,9 @@ class SanitationFacilityTaskResource extends Resource
                                         'ليلي' => 'ليلي',
                                     ])
                                     ->required()
-                                    ->label('الوجبة')
+                                    ->label('الوجبة') // تم تغيير التسمية من "الوجبة" إلى "الوردية" لتكون أوضح
                                     ->columnSpan(1),
-                                    
+
                                 Select::make('status')
                                     ->options([
                                         'مكتمل' => 'مكتمل',
@@ -65,9 +69,33 @@ class SanitationFacilityTaskResource extends Resource
                                     ->required()
                                     ->label('الحالة')
                                     ->columnSpan(1),
+
+                                Select::make('unit_id')
+                                    ->label('الوحدة')
+                                    ->default(fn () => Unit::where('name', 'وحدة المنشآت الصحية')->first()?->id)
+                                    ->hidden() // إخفاء الحقل عن المستخدم
+                                    ->relationship('unit', 'name')
+                                    ->required()
+                                    ->columnSpan(1),
                             ]),
+                        // ✅ إضافة حقل related_goal_id هنا
+                        Select::make('related_goal_id')
+                            ->label('الهدف المرتبط')
+                            ->relationship('relatedGoal', 'goal_text') // يعرض 'goal_text' من موديل UnitGoal
+                            ->searchable() // يسمح بالبحث عن الأهداف
+                            ->required() // اجعله مطلوباً لضمان اختيار هدف
+                            ->placeholder('اختر الهدف المرتبط'), // نص توضيحي
+
+                        // ✅ حقل ساعات العمل للمهمة تم نقله إلى نهاية قسم "المعلومات الأساسية"
+                        TextInput::make('working_hours')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(24) // ساعات العمل لا تتجاوز 24 ساعة
+                            ->label('إجمالي ساعات العمل للمهمة')
+                            ->helperText('إجمالي ساعات العمل التي استغرقتها هذه المهمة.')
+                            ->required(),
                     ]),
-                    
+
                 Section::make('تفاصيل المهمة')
                     ->schema([
                         Grid::make(2)
@@ -76,12 +104,11 @@ class SanitationFacilityTaskResource extends Resource
                                     ->options([
                                         'إدامة' => 'إدامة',
                                         'صيانة' => 'صيانة',
-                                        
                                     ])
                                     ->required()
                                     ->label('نوع المهمة')
-                                    ->live(),
-                                    
+                                    ->live(), // مهم لتحديث الحقول بناءً على الاختيار
+
                                 Select::make('facility_name')
                                     ->options([
                                         'صحية الجامع رجال' => 'صحية الجامع رجال',
@@ -100,80 +127,60 @@ class SanitationFacilityTaskResource extends Resource
                                     ->required()
                                     ->label('اسم المرفق الصحي')
                                     ->searchable(),
-                                     TextInput::make('details')
-                                     ->label('تفاصيل إضافية')
-                                     ->required()
+
+                                Textarea::make('details')
+                                    ->label('تفاصيل إضافية')
+                                    ->required()
+                                    ->columnSpanFull(),
                             ]),
-                            
+
                         Fieldset::make('تفاصيل المعدات')
                             ->schema(function ($get) {
                                 $fields = [];
                                 $taskType = $get('task_type');
                                 $prefix = $taskType === 'إدامة' ? 'عدد' : 'عدد';
                                 $suffix = $taskType === 'إدامة' ? 'المدامة' : 'المصانة';
-                                
+
                                 $fields[] = Grid::make(4)
                                     ->schema([
                                         TextInput::make('seats_count')
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->label("{$prefix} المقاعد {$suffix}")
-                                            ->columnSpan(1),
-                                            
+                                            ->numeric()->minValue(0)->label("{$prefix} المقاعد {$suffix}")->columnSpan(1),
                                         TextInput::make('mirrors_count')
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->label("{$prefix} المرايا {$suffix}")
-                                            ->columnSpan(1),
-                                            
+                                            ->numeric()->minValue(0)->label("{$prefix} المرايا {$suffix}")->columnSpan(1),
                                         TextInput::make('mixers_count')
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->label("{$prefix} الخلاطات {$suffix}")
-                                            ->columnSpan(1),
-                                            
+                                            ->numeric()->minValue(0)->label("{$prefix} الخلاطات {$suffix}")->columnSpan(1),
                                         TextInput::make('doors_count')
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->label("{$prefix} الأبواب {$suffix}")
-                                            ->columnSpan(1),
-                                            
+                                            ->numeric()->minValue(0)->label("{$prefix} الأبواب {$suffix}")->columnSpan(1),
                                         TextInput::make('sinks_count')
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->label("{$prefix} المغاسل {$suffix}")
-                                            ->columnSpan(1),
-                                            
-                                            TextInput::make('toilets_count')
-                                             ->numeric()
-                                             ->minValue(0)
-                                              ->label("{$prefix} الحمامات {$suffix}")
-                                               ->columnSpan(1),
+                                            ->numeric()->minValue(0)->label("{$prefix} المغاسل {$suffix}")->columnSpan(1),
+                                        TextInput::make('toilets_count')
+                                            ->numeric()->minValue(0)->label("{$prefix} الحمامات {$suffix}")->columnSpan(1),
                                     ]);
-                                    
+
                                 return $fields;
                             })
-    ->hidden(fn ($get) => empty($get('task_type'))),
+                            ->hidden(fn ($get) => empty($get('task_type'))),
                     ]),
-                    
+
                 Section::make('الموارد المستخدمة')
                     ->collapsible()
                     ->collapsed()
                     ->schema([
+                        // ✅ تم تعديل هذا الجزء ليطابق هيكل جدول النظافة العامة
                         Repeater::make('resources_used')
-                            ->label('')
+                            ->label('الموارد المستخدمة')
                             ->schema([
                                 TextInput::make('name')
                                     ->label('اسم المورد')
                                     ->required()
                                     ->columnSpan(2),
-                                    
+
                                 TextInput::make('quantity')
                                     ->numeric()
                                     ->minValue(0)
                                     ->label('الكمية')
                                     ->required(),
-                                    
+
                                 Select::make('unit')
                                     ->label('وحدة القياس')
                                     ->options([
@@ -185,25 +192,18 @@ class SanitationFacilityTaskResource extends Resource
                                         'أخرى' => 'أخرى',
                                     ])
                                     ->required(),
-                                    
-                                TextInput::make('working_hours')
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->maxValue(24)
-                                    ->label('ساعات العمل')
-                                    ->columnSpan(1),
                             ])
-                            ->columns(4)
+                            ->columns(4) // أصبحت 4 أعمدة
                             ->createItemButtonLabel('إضافة مورد جديد')
-                            ->defaultItems(1),
+                            ->defaultItems(0),
                     ]),
-                    
+
                 Section::make('المنفذون والتقييم')
                     ->collapsible()
                     ->collapsed()
                     ->schema([
                         Repeater::make('employeeTasks')
-                            ->label('')
+                            ->label('الموظفون المنفذون وتقييمهم')
                             ->relationship('employeeTasks')
                             ->schema([
                                 Select::make('employee_id')
@@ -214,7 +214,7 @@ class SanitationFacilityTaskResource extends Resource
                                     ->required()
                                     ->searchable()
                                     ->columnSpan(2),
-                                    
+
                                 Select::make('employee_rating')
                                     ->label('تقييم الأداء')
                                     ->options([
@@ -227,9 +227,9 @@ class SanitationFacilityTaskResource extends Resource
                                     ->required(),
                             ])
                             ->columns(3)
-                            ->createItemButtonLabel('إضافة منفذ جديد')
+                            ->createItemButtonLabel('إضافة منفذ جديد'),
                     ]),
-                    
+
                 Section::make('المرفقات')
                     ->collapsible()
                     ->collapsed()
@@ -241,7 +241,7 @@ class SanitationFacilityTaskResource extends Resource
                             ->directory('sanitation_facility_tasks/before')
                             ->imageEditor()
                             ->columnSpan(1),
-                            
+
                         FileUpload::make('after_images')
                             ->label('صور بعد التنفيذ')
                             ->image()
@@ -254,7 +254,7 @@ class SanitationFacilityTaskResource extends Resource
             ]);
     }
 
-    public static function table(Table $table): Table
+    public static function table(Tables\Table $table): Tables\Table
     {
         return $table
             ->columns([
@@ -262,26 +262,25 @@ class SanitationFacilityTaskResource extends Resource
                     ->label('التاريخ')
                     ->date('Y-m-d')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('facility_name')
                     ->label('المرفق الصحي')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('task_type')
                     ->label('نوع المهمة')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'إدامة' => 'info',
                         'صيانة' => 'warning',
-                         default => 'gray', // ← هذا يضمن تجنب الخطأ إن جاءت قيمة غير متوقعة
-
+                        default => 'gray',
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('shift')
-                    ->label('الوجبة')
+                    ->label('الوجبة') // تم تغيير التسمية من "الوجبة" إلى "الوردية"
                     ->toggleable(),
-                    
+
                 Tables\Columns\BadgeColumn::make('status')
                     ->label('الحالة')
                     ->colors([
@@ -289,12 +288,27 @@ class SanitationFacilityTaskResource extends Resource
                         'warning' => 'قيد التنفيذ',
                         'danger' => 'ملغى',
                     ]),
-                    
+
+                // ✅ عرض عمود working_hours في الجدول
+                Tables\Columns\TextColumn::make('working_hours')
+                    ->label('ساعات العمل')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('employeeTasks.employee.name')
                     ->label('المنفذون')
                     ->listWithLineBreaks()
                     ->limitList(2)
                     ->expandableLimitedList(),
+
+                // ✅ إضافة عرض حقل الهدف المرتبط في الجدول
+                Tables\Columns\TextColumn::make('relatedGoal.goal_text')
+                    ->label('الهدف المرتبط')
+                    ->words(10)
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
             ])
             ->defaultSort('date', 'desc')
             ->filters([
@@ -304,7 +318,7 @@ class SanitationFacilityTaskResource extends Resource
                         'إدامة' => 'إدامة',
                         'صيانة' => 'صيانة',
                     ]),
-                    
+
                 Tables\Filters\SelectFilter::make('status')
                     ->label('حالة المهمة')
                     ->options([
@@ -312,15 +326,15 @@ class SanitationFacilityTaskResource extends Resource
                         'قيد التنفيذ' => 'قيد التنفيذ',
                         'ملغى' => 'ملغى',
                     ]),
-                    
+
                 Tables\Filters\SelectFilter::make('shift')
-                    ->label('الوجبة')
+                    ->label('الوجبة') // تم تغيير التسمية من "الوجبة" إلى "الوردية"
                     ->options([
                         'صباحي' => 'صباحي',
                         'مسائي' => 'مسائي',
                         'ليلي' => 'ليلي',
                     ]),
-                    
+
                 Tables\Filters\SelectFilter::make('facility_name')
                     ->label('المرفق الصحي')
                     ->options([
@@ -341,11 +355,12 @@ class SanitationFacilityTaskResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->label('عرض'),
-                    
+
                 Tables\Actions\EditAction::make()
                     ->label('تعديل'),
             ])
             ->bulkActions([
+                Tables\Actions\DeleteBulkAction::make(), // أعدت هذا كإجراء افتراضي
                 FilamentExportBulkAction::make('export')
                     ->label('تصدير البيانات'),
             ])
@@ -353,6 +368,21 @@ class SanitationFacilityTaskResource extends Resource
                 FilamentExportHeaderAction::make('export')
                     ->label('تصدير البيانات'),
             ]);
+    }
+
+    /**
+     * تقوم بتعديل البيانات قبل أن يتم حفظها عند الإنشاء.
+     * هذا يضمن تعيين 'unit_id' تلقائيًا دون تدخل المستخدم.
+     *
+     * @param array $data البيانات المرسلة من النموذج.
+     * @return array البيانات المعدلة.
+     */
+    protected static function mutateFormDataBeforeCreate(array $data): array
+    {
+        // تعيين unit_id لوحدة "المنشآت الصحية" (ID: 2) تلقائياً
+        // تأكد أن الـ ID=2 هو فعلاً لوحدة المنشآت الصحية في جدول units
+        $data['unit_id'] = 2;
+        return $data;
     }
 
     public static function getPages(): array

@@ -12,11 +12,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('unit_goals', function (Blueprint $table) {
-             $table->id();
-    $table->foreignId('department_goal_id')->constrained()->onDelete('cascade');
-    $table->string('unit_name');
-    $table->text('goal_text');
-    $table->timestamps();
+            $table->id();
+            $table->foreignId('unit_id')->nullable()->constrained('units')->onDelete('cascade');
+
+            $table->foreignId('department_goal_id')->constrained()->onDelete('cascade');
+
+            // إذا تريد تحتفظ باسم الوحدة:
+            $table->string('unit_name');
+
+            $table->text('goal_text');
+
+            // ✅ إضافة عمود 'target_tasks' هنا
+            $table->unsignedInteger('target_tasks')->default(0)->comment('عدد المهام المستهدفة'); // مقياس الأهداف
+
+            $table->date('date')->nullable();
+
+            $table->timestamps();
         });
     }
 

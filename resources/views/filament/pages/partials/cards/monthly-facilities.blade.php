@@ -1,11 +1,15 @@
 <a href="{{ \App\Filament\Pages\MonthlyReport::getUrl() }}"
    class="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-xl
-          hover:shadow-2xl transition transform hover:-translate-y-1 hover:scale-105 group"
+          hover:shadow-2xl transition transform hover:-translate-y-1 hover:scale-105 group aspect-square"
    title="تقرير المنشآت الصحية الشهرية">
+
     <x-heroicon-o-building-office class="h-6 w-6 text-primary-500 group-hover:text-primary-600 transition" />
+
     <h3 class="text-lg font-bold mt-2 text-gray-900 dark:text-white">تقرير المنشآت الصحية الشهرية</h3>
+
     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1 text-center">عرض تقارير المنشآت الصحية الشهرية</p>
+
     @php $totalFacilitiesReports = \App\Models\SanitationFacilityTask::count(); @endphp
+
     <span class="text-xl font-extrabold text-primary-700 dark:text-primary-300 mt-2">{{ $totalFacilitiesReports }}</span>
 </a>
-

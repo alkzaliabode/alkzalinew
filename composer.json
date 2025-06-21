@@ -8,15 +8,17 @@
         "php": "^8.2",
         "alkoumi/laravel-hijri-date": "^1.0",
         "alperenersoy/filament-export": "^3.0",
+        "barryvdh/laravel-dompdf": "^3.1",
         "bezhansalleh/filament-shield": "^3.3",
         "blade-ui-kit/blade-heroicons": "^2.6",
         "filament/filament": "3.3",
         "filament/notifications": "3.3",
+        "intervention/image": "^3.11",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.1",
         "laravel/scout": "^10.15",
         "laravel/tinker": "^2.9",
-        "spatie/laravel-permission": "^6.19"
+        "spatie/laravel-permission": "^6.20"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

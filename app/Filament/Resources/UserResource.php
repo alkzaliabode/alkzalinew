@@ -15,6 +15,16 @@ class UserResource extends Resource
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'إدارة المستخدمين';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationLabel = 'المستخدمين';
+    protected static ?string $slug = 'users';
+    protected static ?string $recordTitleAttribute = 'name';
+    public static function shouldRegisterNavigation(): bool
+{
+    return auth()->user()?->can('view users') ?? false;
+}
+
 
     public static function form(Form $form): Form
     {

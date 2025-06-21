@@ -13,6 +13,7 @@ class UnitGoal extends Model
         'unit_name',
         'goal_text',
         'date',
+        'target_tasks', // ✅ إضافة هنا
     ];
 
     /**
@@ -20,19 +21,20 @@ class UnitGoal extends Model
      */
     public function getProgressPercentageAttribute()
     {
-        $sanitationTotal = $this->sanitationFacilityTasks()->count();
-        $cleaningTotal = $this->generalCleaningTasks()->count();
-        $total = $sanitationTotal + $cleaningTotal;
+        // مجموع المهام المكتملة من كلا النوعين (نظافة عامة وصحية)
+        $sanitationCompleted = $this->sanitationFacilityTasks()->where('status', 'مكتمل')->count();
+        $cleaningCompleted = $this->generalCleaningTasks()->where('status', 'مكتمل')->count();
+        $completedTasks = $sanitationCompleted + $cleaningCompleted;
 
-        if ($total === 0) {
+        // المهام المستهدفة تأتي الآن من عمود 'target_tasks'
+        $totalTarget = $this->target_tasks;
+
+        if ($totalTarget === 0) {
             return 0;
         }
 
-        $sanitationCompleted = $this->sanitationFacilityTasks()->where('status', 'مكتمل')->count();
-        $cleaningCompleted = $this->generalCleaningTasks()->where('status', 'مكتمل')->count();
-        $completed = $sanitationCompleted + $cleaningCompleted;
-
-        return round(($completed / $total) * 100, 2);
+        // حساب نسبة الإنجاز
+        return round(($completedTasks / $totalTarget) * 100, 2);
     }
 
     /**

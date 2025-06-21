@@ -18,11 +18,21 @@ return new class extends Migration
             $table->unsignedTinyInteger('quality_rating')->nullable();
             $table->unsignedTinyInteger('efficiency_score')->nullable();
 
-            // المفتاح الخارجي مرتبط بجدول unit_goals وليس units
-            $table->unsignedBigInteger('unit_id');
-            $table->foreign('unit_id')->references('id')->on('unit_goals')->onDelete('cascade');
+            // ✅ المفتاح الخارجي لـ unit_goal_id (الهدف المرتبط بالوحدة)
+            $table->unsignedBigInteger('unit_goal_id');
+            $table->foreign('unit_goal_id')->references('id')->on('unit_goals')->onDelete('cascade');
 
+            // ✅ unit_id (معرف الوحدة الأم) و department_goal_id (معرف هدف القسم) للتصنيف والتقارير الأسهل
+            $table->unsignedBigInteger('unit_id')->nullable();
+            $table->foreign('unit_id')->references('id')->on('units')->onDelete('set null');
+
+            $table->unsignedBigInteger('department_goal_id')->nullable();
+            $table->foreign('department_goal_id')->references('id')->on('department_goals')->onDelete('set null');
+            
             $table->timestamps();
+
+            // ✅ قيد فريد لضمان سجل واحد لكل هدف وحدة في تاريخ معين
+            $table->unique(['date', 'unit_goal_id']);
         });
     }
 

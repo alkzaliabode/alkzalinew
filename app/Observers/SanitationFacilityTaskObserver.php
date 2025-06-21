@@ -8,42 +8,27 @@ use App\Models\ResourceTracking;
 
 class SanitationFacilityTaskObserver
 {
+    /**
+     * Handle the SanitationFacilityTask "saved" event (created or updated).
+     */
     public function saved(SanitationFacilityTask $task): void
     {
         // تأكد من وجود الوحدة والتاريخ
         if (!$task->unit_id || !$task->date) {
+            // error_log("DEBUG: SanitationFacilityTaskObserver: Missing unit_id or date for task ID: {$task->id}\n");
             return;
         }
 
-        // حساب عدد المهام المكتملة لهذا اليوم
-        $completedTasks = SanitationFacilityTask::where('unit_id', $task->unit_id)
-            ->where('date', $task->date)
-            ->where('status', 'مكتمل')
-            ->count();
-
-        // حساب متوسط تقييم الموظفين لجميع المهام المكتملة في نفس اليوم
-        $averageRating = \App\Models\EmployeeTask::whereHas('sanitationFacilityTask', function ($q) use ($task) {
-                $q->where('unit_id', $task->unit_id)
-                  ->where('date', $task->date)
-                  ->where('status', 'مكتمل');
-            })
-            ->avg('employee_rating') ?? 0;
-
-        $efficiencyScore = $averageRating > 0 ? round(($averageRating / 5) * 100) : 0;
-
-        ActualResult::updateOrCreate(
-            [
-                'unit_id' => $task->unit_id,
-                'date'    => $task->date,
-            ],
-            [
-                'completed_tasks'  => $completedTasks,
-                'quality_rating'   => round($averageRating),
-                'efficiency_score' => $efficiencyScore,
-            ]
+        // استدعاء دالة recalculateForUnitAndDate لتحديث ActualResult
+        // هذه الدالة ستتولى حساب المهام المكتملة، البحث عن الهدف، وحساب مقاييس جيلبرت، وتحديث ActualResult.
+        ActualResult::recalculateForUnitAndDate(
+            $task->unit_id,
+            $task->date
+            // كما في Observer الآخر، لا نمرر $task->unit_goal_id هنا
+            // لأن دالة recalculateForUnitAndDate تجده بنفسها بناءً على الوحدة والتاريخ
         );
 
-        // === تحديث أو إنشاء سجل تتبع الموارد ===
+        // === تحديث أو إنشاء سجل تتبع الموارد (بقي كما هو) ===
         $allTasks = SanitationFacilityTask::where('unit_id', $task->unit_id)
             ->where('date', $task->date)
             ->get();
@@ -86,18 +71,28 @@ class SanitationFacilityTaskObserver
         );
     }
 
+    /**
+     * Handle the SanitationFacilityTask "deleted" event.
+     */
     public function deleted(SanitationFacilityTask $task): void
     {
-        $this->saved($task);
+        // إعادة حساب النتائج بعد الحذف
+        ActualResult::recalculateForUnitAndDate($task->unit_id, $task->date);
     }
 
+    /**
+     * Handle the SanitationFacilityTask "restored" event.
+     */
     public function restored(SanitationFacilityTask $task): void
     {
-        $this->saved($task);
+        ActualResult::recalculateForUnitAndDate($task->unit_id, $task->date);
     }
 
+    /**
+     * Handle the SanitationFacilityTask "forceDeleted" event.
+     */
     public function forceDeleted(SanitationFacilityTask $task): void
     {
-        $this->saved($task);
+        ActualResult::recalculateForUnitAndDate($task->unit_id, $task->date);
     }
 }

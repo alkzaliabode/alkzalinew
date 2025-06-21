@@ -47,6 +47,16 @@ class UnitGoalResource extends Resource
                 ->label('نص الهدف')
                 ->columnSpanFull(),
 
+            // ✅ إضافة حقل إدخال لـ target_tasks هنا
+            Forms\Components\TextInput::make('target_tasks')
+                ->label('عدد المهام المستهدفة')
+                ->numeric()
+                ->required()
+                ->minValue(0) // يمكن أن تكون 0 إذا لم يكن هناك هدف كمي محدد، لكن يُفضل وضع قيمة إيجابية
+                ->default(1) // قيمة افتراضية لتجنب الصفر إذا نسي المستخدم
+                ->helperText('العدد المستهدف من المهام لإنجاز هذا الهدف.')
+                ->columnSpanFull(),
+
             Forms\Components\DatePicker::make('date')
                 ->label('التاريخ'),
         ]);
@@ -77,9 +87,18 @@ class UnitGoalResource extends Resource
                 Tables\Columns\TextColumn::make('date')
                     ->label('التاريخ')
                     ->date(),
+                // ✅ عرض عمود المهام المستهدفة في الجدول
+                Tables\Columns\TextColumn::make('target_tasks')
+                    ->label('المستهدف')
+                    ->alignCenter(),
                 Tables\Columns\TextColumn::make('progress_percentage')
                     ->label('نسبة تحقق الهدف')
-                    ->formatStateUsing(fn ($state, $record) => $record->progress_percentage . '%'),
+                    ->formatStateUsing(fn ($state, $record) => $record->progress_percentage . '%')
+                    ->color(fn ($state) => match (true) {
+                        $state >= 100 => 'success',
+                        $state >= 75 => 'warning',
+                        default => 'danger',
+                    }),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('department_goal_id')

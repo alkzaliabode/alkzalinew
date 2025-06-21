@@ -4,7 +4,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('monthly_general_cleaning_summary', function (Blueprint $table) {
@@ -24,9 +28,15 @@ return new class extends Migration {
             $table->integer('total_laid_carpets')->default(0);
             $table->integer('total_large_containers')->default(0);
             $table->integer('total_small_containers')->default(0);
+            // ✅ إضافة عمود total_tasks هنا
+            $table->integer('total_tasks')->default(0);
+            $table->timestamps(); // ✅ إضافة created_at و updated_at
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('monthly_general_cleaning_summary');

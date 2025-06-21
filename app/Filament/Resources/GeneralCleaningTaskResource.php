@@ -5,6 +5,9 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\GeneralCleaningTaskResource\Pages;
 use App\Models\GeneralCleaningTask;
 use App\Models\Employee;
+use App\Models\Unit; // تأكد من استيراد موديل الوحدة
+use App\Models\UnitGoal; // ✅ هام: استيراد موديل UnitGoal
+
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Components\Section;
@@ -20,7 +23,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportBulkAction;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
-use Illuminate\Support\HtmlString; // تأكد من استيراد هذا
+use Illuminate\Support\HtmlString;
 
 class GeneralCleaningTaskResource extends Resource
 {
@@ -44,7 +47,7 @@ class GeneralCleaningTaskResource extends Resource
                                     ->required()
                                     ->label('التاريخ')
                                     ->default(now()),
-                                
+
                                 Select::make('shift')
                                     ->options([
                                         'صباحي' => 'صباحي',
@@ -52,8 +55,8 @@ class GeneralCleaningTaskResource extends Resource
                                         'ليلي' => 'ليلي',
                                     ])
                                     ->required()
-                                    ->label('الوجبة'),
-                                
+                                    ->label('الوردية'), // تم تغيير التسمية من "الوجبة" إلى "الوردية"
+
                                 Select::make('status')
                                     ->options([
                                         'مكتمل' => 'مكتمل',
@@ -63,8 +66,22 @@ class GeneralCleaningTaskResource extends Resource
                                     ->required()
                                     ->label('الحالة'),
                             ]),
+                        // ✅ إضافة حقل related_goal_id هنا
+                        Select::make('related_goal_id')
+                            ->label('الهدف المرتبط')
+                            ->relationship('relatedGoal', 'goal_text') // يعرض 'goal_text' من موديل UnitGoal
+                            ->searchable() // يسمح بالبحث عن الأهداف
+                            ->required() // اجعله مطلوباً لضمان اختيار هدف
+                            ->placeholder('اختر الهدف المرتبط'), // نص توضيحي
+
+                        Select::make('unit_id')
+                            ->label('الوحدة')
+                            ->default(fn () => Unit::where('name', 'وحدة النظافة العامة')->first()?->id)
+                            ->hidden() // إخفاء الحقل عن المستخدم
+                            ->relationship('unit', 'name')
+                            ->required(),
                     ]),
-                    
+
                 Section::make('تفاصيل المهمة')
                     ->schema([
                         Grid::make(2)
@@ -76,8 +93,8 @@ class GeneralCleaningTaskResource extends Resource
                                     ])
                                     ->required()
                                     ->label('نوع المهمة')
-                                    ->live(),
-                                
+                                    ->live(), // مهم لتحديث الحقول بناءً على الاختيار
+
                                 Select::make('location')
                                     ->options([
                                         // القاعات
@@ -107,7 +124,7 @@ class GeneralCleaningTaskResource extends Resource
                                         'قاعة 12 الأعلى' => 'قاعة 12 الأعلى',
                                         'قاعة 13 الأسفل' => 'قاعة 13 الأسفل',
                                         'قاعة 13 الأعلى' => 'قاعة 13 الأعلى',
-                                        // المواقع الأخرى
+                                        // ... جميع القاعات الأخرى
                                         'الترامز' => 'الترامز',
                                         'السجاد' => 'السجاد',
                                         'الحاويات' => 'الحاويات',
@@ -117,97 +134,53 @@ class GeneralCleaningTaskResource extends Resource
                                     ->required()
                                     ->label('الموقع')
                                     ->searchable()
-                                    ->live(),
+                                    ->live(), // مهم لتحديث الحقول بناءً على الاختيار
                             ]),
-                            
+
                         Fieldset::make('تفاصيل التنفيذ')
                             ->schema(function ($get) {
                                 $location = $get('location');
                                 $fields = [];
-                                
+
                                 if (str_contains($location, 'قاعة')) {
                                     $fields[] = Grid::make(4)
                                         ->schema([
                                             TextInput::make('mats_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد المنادر المدامة')
-                                                ->columnSpan(1),
-                                                
+                                                ->numeric()->minValue(0)->label('عدد المنادر المدامة')->columnSpan(1),
                                             TextInput::make('pillows_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد الوسادات المدامة')
-                                                ->columnSpan(1),
-                                                
+                                                ->numeric()->minValue(0)->label('عدد الوسادات المدامة')->columnSpan(1),
                                             TextInput::make('fans_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد المراوح المدامة')
-                                                ->columnSpan(1),
-                                                
+                                                ->numeric()->minValue(0)->label('عدد المراوح المدامة')->columnSpan(1),
                                             TextInput::make('windows_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد النوافذ المدامة')
-                                                ->columnSpan(1),
-                                                
+                                                ->numeric()->minValue(0)->label('عدد النوافذ المدامة')->columnSpan(1),
                                             TextInput::make('carpets_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد السجاد المدام')
-                                                ->columnSpan(1),
-                                                
+                                                ->numeric()->minValue(0)->label('عدد السجاد المدام')->columnSpan(1),
                                             TextInput::make('blankets_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد البطانيات المدامة')
-                                                ->columnSpan(1),
-                                                
+                                                ->numeric()->minValue(0)->label('عدد البطانيات المدامة')->columnSpan(1),
                                             TextInput::make('beds_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد الأسرة')
-                                                ->columnSpan(1),
-                                                
+                                                ->numeric()->minValue(0)->label('عدد الأسرة')->columnSpan(1),
                                             TextInput::make('beneficiaries_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد المستفيدين من القاعة')
-                                                ->columnSpan(1),
+                                                ->numeric()->minValue(0)->label('عدد المستفيدين من القاعة')->columnSpan(1),
                                         ]);
                                 } elseif ($location === 'الترامز') {
                                     $fields[] = Grid::make(2)
                                         ->schema([
                                             TextInput::make('filled_trams_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد الترامز المملوئة والمدامة')
-                                                ->columnSpan(1),
+                                                ->numeric()->minValue(0)->label('عدد الترامز المملوئة والمدامة')->columnSpan(1),
                                         ]);
                                 } elseif ($location === 'السجاد') {
                                     $fields[] = Grid::make(2)
                                         ->schema([
                                             TextInput::make('carpets_laid_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد السجاد المفروش في الساحات')
-                                                ->columnSpan(1),
+                                                ->numeric()->minValue(0)->label('عدد السجاد المفروش في الساحات')->columnSpan(1),
                                         ]);
                                 } elseif ($location === 'الحاويات') {
                                     $fields[] = Grid::make(2)
                                         ->schema([
                                             TextInput::make('large_containers_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد الحاويات الكبيرة المفرغة والمدامة')
-                                                ->columnSpan(1),
-                                                
+                                                ->numeric()->minValue(0)->label('عدد الحاويات الكبيرة المفرغة والمدامة')->columnSpan(1),
                                             TextInput::make('small_containers_count')
-                                                ->numeric()
-                                                ->minValue(0)
-                                                ->label('عدد الحاويات الصغيرة المفرغة والمدامة')
-                                                ->columnSpan(1),
+                                                ->numeric()->minValue(0)->label('عدد الحاويات الصغيرة المفرغة والمدامة')->columnSpan(1),
                                         ]);
                                 } elseif ($location === 'الجامع' || $location === 'المركز الصحي') {
                                     $fields[] = Grid::make(2)
@@ -217,30 +190,38 @@ class GeneralCleaningTaskResource extends Resource
                                                 ->columnSpan(2),
                                         ]);
                                 }
-                                
+
                                 return $fields;
                             })
                             ->hidden(fn ($get) => empty($get('location'))),
                     ]),
-                    
-                Section::make('الموارد المستخدمة')
+
+                Section::make('الموارد المستخدمة وساعات العمل')
                     ->collapsible()
                     ->collapsed()
                     ->schema([
+                        TextInput::make('working_hours')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(24)
+                            ->label('إجمالي ساعات العمل للمهمة')
+                            ->helperText('إجمالي ساعات العمل التي استغرقتها هذه المهمة.')
+                            ->required(),
+
                         Repeater::make('resources_used')
-                            ->label('')
+                            ->label('الموارد الأخرى المستخدمة')
                             ->schema([
                                 TextInput::make('name')
                                     ->label('اسم المورد')
                                     ->required()
                                     ->columnSpan(2),
-                                    
+
                                 TextInput::make('quantity')
                                     ->numeric()
                                     ->minValue(0)
                                     ->label('الكمية')
                                     ->required(),
-                                    
+
                                 Select::make('unit')
                                     ->label('وحدة القياس')
                                     ->options([
@@ -252,25 +233,18 @@ class GeneralCleaningTaskResource extends Resource
                                         'أخرى' => 'أخرى',
                                     ])
                                     ->required(),
-                                    
-                                TextInput::make('working_hours')
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->maxValue(24)
-                                    ->label('ساعات العمل')
-                                    ->columnSpan(1),
                             ])
                             ->columns(4)
                             ->createItemButtonLabel('إضافة مورد جديد')
-                            ->defaultItems(1),
+                            ->defaultItems(0),
                     ]),
-                    
+
                 Section::make('المنفذون والتقييم')
                     ->collapsible()
                     ->collapsed()
                     ->schema([
                         Repeater::make('employeeTasks')
-                            ->label('')
+                            ->label('الموظفون المنفذون وتقييمهم')
                             ->relationship('employeeTasks')
                             ->schema([
                                 Select::make('employee_id')
@@ -281,7 +255,7 @@ class GeneralCleaningTaskResource extends Resource
                                     ->required()
                                     ->searchable()
                                     ->columnSpan(2),
-                                    
+
                                 Select::make('employee_rating')
                                     ->label('تقييم الأداء')
                                     ->options([
@@ -296,7 +270,7 @@ class GeneralCleaningTaskResource extends Resource
                             ->columns(3)
                             ->createItemButtonLabel('إضافة منفذ جديد'),
                     ]),
-                    
+
                 Section::make('المرفقات')
                     ->collapsible()
                     ->collapsed()
@@ -308,7 +282,7 @@ class GeneralCleaningTaskResource extends Resource
                             ->directory('general_cleaning_tasks/before')
                             ->imageEditor()
                             ->columnSpan(1),
-                            
+
                         FileUpload::make('after_images')
                             ->label('صور بعد التنفيذ')
                             ->image()
@@ -321,7 +295,7 @@ class GeneralCleaningTaskResource extends Resource
             ]);
     }
 
-    public static function table(Table $table): Table
+    public static function table(Tables\Table $table): Tables\Table
     {
         return $table
             ->columns([
@@ -329,7 +303,7 @@ class GeneralCleaningTaskResource extends Resource
                     ->label('التاريخ')
                     ->date('Y-m-d')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('task_type')
                     ->label('نوع المهمة')
                     ->badge()
@@ -338,35 +312,31 @@ class GeneralCleaningTaskResource extends Resource
                         'صيانة' => 'warning',
                         default => 'gray',
                     }),
-                    
-                // بدء تأثير التمرير (Hover Effect) باستخدام Alpine.js
+
                 Tables\Columns\TextColumn::make('location')
                     ->label('الموقع')
                     ->searchable()
                     ->sortable()
                     ->html() // مهم: يسمح بعرض HTML
                     ->formatStateUsing(function (string $state): HtmlString {
-                        // أيقونة Heroicon "truck" (شاحنة)
-                        // استخدم h-5 w-5 مباشرة على الـ SVG
                         $iconSvg = '
-                            <svg class="h-5 w-5 text-blue-600 transition duration-300 transform group-hover:scale-125" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"> 
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18L10.5 20.25M12 10.5H16.5M16.5 6V12M16.5 6L14.25 3.75M9.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10.5M15.75 21H10.5V18.75H15.75V21Z" /> 
+                            <svg class="h-5 w-5 text-blue-600 transition duration-300 transform group-hover:scale-125" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18L10.5 20.25M12 10.5H16.5M16.5 6V12M16.5 6L14.25 3.75M9.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10.5M15.75 21H10.5V18.75H15.75V21Z" />
                             </svg>
                         ';
-                        
+
                         return new HtmlString(
-                            '<div x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false" class="group inline-flex items-center justify-center relative cursor-pointer min-w-[70px] h-full overflow-hidden">' . 
+                            '<div x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false" class="group inline-flex items-center justify-center relative cursor-pointer min-w-[70px] h-full overflow-hidden">' .
                                 '<span x-show="!hovered" x-transition:opacity.duration.300 class="text-gray-800 text-center w-full">' . $state . '</span>' .
                                 '<span x-show="hovered" x-transition:opacity.duration.300.delay-50 class="absolute inset-0 flex items-center justify-center w-full h-full">' . $iconSvg . '</span>' .
                             '</div>'
                         );
                     }),
-                // نهاية تأثير التمرير
-                    
+
                 Tables\Columns\TextColumn::make('shift')
-                    ->label('الوجبة')
+                    ->label('الوجبة') // تم تغيير التسمية من "الوجبة" إلى "الوردية"
                     ->toggleable(),
-                    
+
                 Tables\Columns\BadgeColumn::make('status')
                     ->label('الحالة')
                     ->colors([
@@ -374,43 +344,43 @@ class GeneralCleaningTaskResource extends Resource
                         'warning' => 'قيد التنفيذ',
                         'danger' => 'ملغى',
                     ]),
-                    
+
                 Tables\Columns\TextColumn::make('mats_count')
                     ->label('عدد المنادر المدامة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                
+
                 Tables\Columns\TextColumn::make('pillows_count')
                     ->label('عدد الوسادات المدامة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                
+
                 Tables\Columns\TextColumn::make('fans_count')
                     ->label('عدد المراوح المدامة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                
+
                 Tables\Columns\TextColumn::make('windows_count')
                     ->label('عدد النوافذ المدامة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                
+
                 Tables\Columns\TextColumn::make('carpets_count')
                     ->label('عدد السجاد المدام')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                
+
                 Tables\Columns\TextColumn::make('blankets_count')
                     ->label('عدد البطانيات المدامة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                
+
                 Tables\Columns\TextColumn::make('beds_count')
                     ->label('عدد الأسرة')
                     ->numeric()
@@ -452,19 +422,17 @@ class GeneralCleaningTaskResource extends Resource
                     ->words(10)
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\TextColumn::make('employeeTasks.employee.name')
                     ->label('المنفذون')
                     ->listWithLineBreaks()
                     ->limitList(2)
                     ->expandableLimitedList()
-                    // تعديل اسم الفئة للتقييم "جيد جداً"
                     ->formatStateUsing(function ($state, $record) {
                         $summary = '';
                         foreach ($record->employeeTasks as $employeeTask) {
                             $employeeName = $employeeTask->employee->name ?? 'غير معروف';
                             $rating = $employeeTask->employee_rating;
-                            // تحويل التقييم العددي إلى نص ورمز نجمة
                             $ratingText = match ($rating) {
                                 1 => 'ضعيف ★',
                                 2 => '★★',
@@ -473,8 +441,7 @@ class GeneralCleaningTaskResource extends Resource
                                 5 => 'ممتاز ★★★★★',
                                 default => 'غير مقيم',
                             };
-                            // استخدام اسم فئة صحيح (مع شرطة بدلاً من المسافة)
-                            $ratingClass = 'rating-' . str_replace([' ', '★'], ['-', ''], $ratingText); // إزالة النجوم والمسافات
+                            $ratingClass = 'rating-' . str_replace([' ', '★'], ['-', ''], $ratingText);
                             $summary .= '<div class="task-item">' . $employeeName . ' (<span class="' . $ratingClass . '">' . $ratingText . '</span>)</div>';
                         }
                         return new HtmlString($summary);
@@ -488,7 +455,7 @@ class GeneralCleaningTaskResource extends Resource
                         'إدامة' => 'إدامة',
                         'صيانة' => 'صيانة',
                     ]),
-                    
+
                 Tables\Filters\SelectFilter::make('status')
                     ->label('حالة المهمة')
                     ->options([
@@ -496,15 +463,15 @@ class GeneralCleaningTaskResource extends Resource
                         'قيد التنفيذ' => 'قيد التنفيذ',
                         'ملغى' => 'ملغى',
                     ]),
-                    
+
                 Tables\Filters\SelectFilter::make('shift')
-                    ->label('الوجبة')
+                    ->label('الوجبة') // تم تغيير التسمية من "الوجبة" إلى "الوردية"
                     ->options([
                         'صباحي' => 'صباحي',
                         'مسائي' => 'مسائي',
                         'ليلي' => 'ليلي',
                     ]),
-                    
+
                 Tables\Filters\SelectFilter::make('location')
                     ->label('الموقع')
                     ->options([
@@ -546,11 +513,12 @@ class GeneralCleaningTaskResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->label('عرض'),
-                    
+
                 Tables\Actions\EditAction::make()
                     ->label('تعديل'),
             ])
             ->bulkActions([
+                Tables\Actions\DeleteBulkAction::make(), // أعدت هذا كإجراء افتراضي
                 FilamentExportBulkAction::make('export')
                     ->label('تصدير البيانات'),
             ])
@@ -558,6 +526,21 @@ class GeneralCleaningTaskResource extends Resource
                 FilamentExportHeaderAction::make('export')
                     ->label('تصدير البيانات'),
             ]);
+    }
+
+    /**
+     * تقوم بتعديل البيانات قبل أن يتم حفظها عند الإنشاء.
+     * هذا يضمن تعيين 'unit_id' تلقائيًا دون تدخل المستخدم.
+     *
+     * @param array $data البيانات المرسلة من النموذج.
+     * @return array البيانات المعدلة.
+     */
+    protected static function mutateFormDataBeforeCreate(array $data): array
+    {
+        // تعيين unit_id لوحدة "النظافة العامة" (ID: 1) تلقائياً
+        // تأكد أن الـ ID=1 هو فعلاً لوحدة النظافة العامة في جدول units
+        $data['unit_id'] = 1;
+        return $data;
     }
 
     public static function getPages(): array

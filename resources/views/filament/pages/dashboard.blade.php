@@ -1,4 +1,14 @@
-<x-filament-panels::page>
+<x-filament-panels::page dir="rtl">
+    <style>
+        .fi-dashboard-page svg {
+            width: 98px !important;
+            height: 98px !important;
+        }
+        .fi-dashboard-page .icon {
+            font-size: 4rem !important;
+        }
+    </style>
+
     <div class="fi-dashboard-page px-6 py-8 max-w-7xl mx-auto">
 
         {{-- لوحة التحكم للشعبة الخدمية --}}

@@ -21,18 +21,28 @@ class ResourceTracking extends Model
         'date' => 'date'
     ];
 
+    // علاقة بالوحدة (Unit)
     public function unit(): BelongsTo
     {
-        return $this->belongsTo(Unit::class);
+        return $this->belongsTo(Unit::class); // تأكد من وجود موديل Unit
     }
 
-    // حساب الكفاءة الإجمالية
+    // ✅ إضافة Accessor لـ 'total_working_hours'
+    // هذا سيعيد قيمة 'working_hours' ولكن يمكن الوصول إليه كـ $resourceTracking->total_working_hours
+    public function getTotalWorkingHoursAttribute(): int
+    {
+        return $this->working_hours;
+    }
+
+    // حساب الكفاءة الإجمالية (يعتمد على working_hours)
     public function getEfficiencyAttribute(): float
     {
+        // تأكد من أن GeneralCleaningTask موجودة وأن بها علاقة مع هذا الموديل أو يمكن ربطها
+        // هذا المثال يفترض أن working_hours هو فعلاً إجمالي الساعات ذات الصلة
         $completedTasks = GeneralCleaningTask::whereDate('date', $this->date)
-                          ->where('unit_id', $this->unit_id)
-                          ->where('status', 'مكتمل')
-                          ->count();
+                               ->where('unit_id', $this->unit_id)
+                               ->where('status', 'مكتمل')
+                               ->count();
         
         return $this->working_hours > 0 
             ? round($completedTasks / $this->working_hours, 2)

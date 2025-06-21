@@ -1,41 +1,66 @@
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-    {{-- 
-        |-----------------------------------------------------------
-        | بطاقات لوحة القيادة - كل بطاقة مستوردة من ملف جزئي مستقل
-        |-----------------------------------------------------------
-        | يسهل هذا الفصل من صيانة كل بطاقة على حدة وتوسعة اللوحة.
-    --}}
+{{-- هذا يمثل ملف Blade الخاص بلوحة المعلومات الرئيسية، على سبيل المثال:
+     resources/views/filament/pages/dashboard.blade.php أو أي صفحة تجمع هذه البطاقات --}}
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
 
     {{-- بطاقة الموظفين --}}
-    @include('filament.pages.partials.cards.employees')
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.employees')
+    </div>
 
     {{-- بطاقة مهام الموظفين --}}
-    @include('filament.pages.partials.cards.employee-tasks')
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.employee-tasks')
+    </div>
 
-    {{-- بطاقة النظافة العامة --}}
-    @include('filament.pages.partials.cards.general-cleaning-tasks')
+    {{-- بطاقة مهام النظافة العامة --}}
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.general-cleaning-tasks')
+    </div>
 
-    {{-- بطاقة المنشآت الصحية --}}
-    @include('filament.pages.partials.cards.sanitation-facility-tasks')
+    {{-- بطاقة مهام المنشآت الصحية --}}
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.sanitation-facility-tasks')
+    </div>
 
     {{-- بطاقة النتائج الفعلية --}}
-    @include('filament.pages.partials.cards.actual-results')
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.actual-results')
+    </div>
 
-    {{-- بطاقة المواقف اليومية --}}
-    @include('filament.pages.partials.cards.daily-status')
+    {{-- بطاقة الحالة اليومية --}}
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.daily-status')
+    </div>
 
-    {{-- بطاقة استبيانات الزوار --}}
-    @include('filament.pages.partials.cards.survey')
+    {{-- بطاقة الاستبيان --}}
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.survey')
+    </div>
 
-    {{-- بطاقة أهداف الوحدة --}}
-    @include('filament.pages.partials.cards.unit-goal')
+    {{-- بطاقة هدف الوحدة --}}
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.unit-goal')
+    </div>
 
-    {{-- بطاقة تتبع الموارد --}}
-    @include('filament.pages.partials.cards.resources')
+    {{-- بطاقة الموارد --}}
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.resources')
+    </div>
 
-    {{-- بطاقة تقارير النظافة الشهرية --}}
-    @include('filament.pages.partials.cards.monthly-cleaning')
+    {{-- بطاقة النظافة الشهرية --}}
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.monthly-cleaning')
+    </div>
 
-    {{-- بطاقة تقارير المنشآت الصحية الشهرية --}}
-    @include('filament.pages.partials.cards.monthly-facilities')
+    {{-- بطاقة المنشآت الشهرية --}}
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.monthly-facilities')
+    </div>
+
+    {{-- إضافة بطاقة التقارير المصورة هنا --}}
+    <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+        @include('filament.pages.partials.cards.image-reports')
+    </div>
+
 </div>

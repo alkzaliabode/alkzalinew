@@ -15,7 +15,7 @@ class ResourceTrackingPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_');
+        return $user->can('view_any_resource::tracking');
     }
 
     /**
@@ -23,7 +23,7 @@ class ResourceTrackingPolicy
      */
     public function view(User $user, ResourceTracking $resourceTracking): bool
     {
-        return $user->can('view_');
+        return $user->can('view_resource::tracking');
     }
 
     /**
@@ -31,7 +31,7 @@ class ResourceTrackingPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_');
+        return $user->can('create_resource::tracking');
     }
 
     /**
@@ -39,7 +39,7 @@ class ResourceTrackingPolicy
      */
     public function update(User $user, ResourceTracking $resourceTracking): bool
     {
-        return $user->can('update_');
+        return $user->can('update_resource::tracking');
     }
 
     /**
@@ -47,7 +47,7 @@ class ResourceTrackingPolicy
      */
     public function delete(User $user, ResourceTracking $resourceTracking): bool
     {
-        return $user->can('delete_');
+        return $user->can('delete_resource::tracking');
     }
 
     /**
@@ -55,7 +55,7 @@ class ResourceTrackingPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_');
+        return $user->can('delete_any_resource::tracking');
     }
 
     /**
@@ -63,7 +63,7 @@ class ResourceTrackingPolicy
      */
     public function forceDelete(User $user, ResourceTracking $resourceTracking): bool
     {
-        return $user->can('force_delete_');
+        return $user->can('force_delete_resource::tracking');
     }
 
     /**
@@ -71,7 +71,7 @@ class ResourceTrackingPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_');
+        return $user->can('force_delete_any_resource::tracking');
     }
 
     /**
@@ -79,7 +79,7 @@ class ResourceTrackingPolicy
      */
     public function restore(User $user, ResourceTracking $resourceTracking): bool
     {
-        return $user->can('restore_');
+        return $user->can('restore_resource::tracking');
     }
 
     /**
@@ -87,7 +87,7 @@ class ResourceTrackingPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_');
+        return $user->can('restore_any_resource::tracking');
     }
 
     /**
@@ -95,7 +95,7 @@ class ResourceTrackingPolicy
      */
     public function replicate(User $user, ResourceTracking $resourceTracking): bool
     {
-        return $user->can('replicate_');
+        return $user->can('replicate_resource::tracking');
     }
 
     /**
@@ -103,6 +103,6 @@ class ResourceTrackingPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_');
+        return $user->can('reorder_resource::tracking');
     }
 }

@@ -28,4 +28,10 @@ class Unit extends Model
     {
         return $this->hasMany(GeneralCleaningTask::class);
     }
+
+    // **هنا تضيف علاقة نتائج الأداء (ActualResult)**
+    public function actualResults(): HasMany
+    {
+        return $this->hasMany(ActualResult::class);
+    }
 }

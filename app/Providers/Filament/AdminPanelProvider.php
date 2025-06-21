@@ -75,6 +75,8 @@ class AdminPanelProvider extends PanelProvider
             // تسجيل الصفحات المحددة يدويًا، مثل لوحة القيادة المخصصة.
             ->pages([
                 \App\Filament\Pages\Dashboard::class, // صفحة لوحة القيادة التي ستعرض البطاقات.
+                    \App\Filament\Pages\ProfessionalImageReports::class,  // إضافة صفحة التقارير المصورة
+
             ])
             // اكتشاف وتسجيل جميع الـ Widgets تلقائيًا.
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')

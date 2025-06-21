@@ -5,43 +5,67 @@
     <title>الموقف اليومي - {{ \Carbon\Carbon::parse($record->date)->format('Y-m-d') }}</title>
     <style>
         @page { size: A4; margin: 10mm; }
-        body { font-family: 'Arial', sans-serif; line-height: 1.4; color: #000; margin: 0; padding: 0; font-size: 13px; } /* تقليل ارتفاع السطر وحجم الخط الأساسي */
+        body { font-family: 'Arial', sans-serif; line-height: 1.4; color: #000; margin: 0; padding: 0; font-size: 13px; }
         .container { 
             width: 100%; 
             max-width: 210mm; 
             margin: 0 auto; 
             padding: 5mm; 
-            border: 1px solid #ccc; /* <--- إضافة إطار كامل للصفحة هنا */
-            box-sizing: border-box; /* لضمان عدم زيادة الحجم الكلي مع الحدود */
+            border: 1px solid #ccc;
+            box-sizing: border-box;
         } 
         .header { text-align: center; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid #eee; }
-        .header .logo { width: 60px; height: 60px; object-fit: contain; margin-left: 10px; } /* حجم الشعار */
+        .header .logo { width: 60px; height: 60px; object-fit: contain; margin-left: 10px; }
         .header .text-content { flex-grow: 1; text-align: center; }
         .title { font-size: 18px; font-weight: bold; margin: 0; }
         .subtitle { font-size: 14px; margin: 2px 0; color: #555; }
-        table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; } /* تقليل الهامش وحجم الخط */
-        th, td { border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; } /* تقليل الحشوة */
-        th { background-color: #e6e6e6; font-weight: bold; } /* لون خلفية أفتح لرؤوس الجداول */
-        .table-title { font-size: 14px; font-weight: bold; text-align: right; margin-top: 12px; margin-bottom: 5px; border-bottom: 1px solid #ddd; padding-bottom: 3px; color: #333; } /* عنوان للجداول الفرعية */
-        .two-column-tables { display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 10px; } /* حاوية للجداول ذات العمودين */
-        .two-column-tables > div { width: 49%; /* تقريبا نصف العرض لكل جدول */ }
-        .two-column-tables table { margin: 0; } /* إزالة الهامش من الجداول الداخلية */
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+        th, td { border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; }
+        th { background-color: #e6e6e6; font-weight: bold; }
+        .table-title { font-size: 14px; font-weight: bold; text-align: right; margin-top: 12px; margin-bottom: 5px; border-bottom: 1px solid #ddd; padding-bottom: 3px; color: #333; }
+        .two-column-tables { display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 10px; }
+        .two-column-tables > div { width: 49%; }
+        .two-column-tables table { margin: 0; }
 
-        .footer { margin-top: 25px; text-align: left; font-size: 12px; }
-        .signature { margin-top: 30px; text-align: left; }
+        /* ** تنسيقات التوقيعات الجديدة ** */
+        .signatures-container { 
+            margin-top: 25px; 
+            overflow: hidden; /* Clearfix for floats */
+            width: 100%; /* Ensure it takes full width */
+        }
+        .signature-block {
+            width: 48%; /* Adjust width as needed for spacing */
+            margin-top: 10px;
+            font-size: 12px;
+            padding: 5px; /* Add some padding around the block */
+            box-sizing: border-box;
+        }
+        .responsible-signature {
+            float: right; /* مسؤول شعبة الخدمية في اليمين */
+            text-align: right;
+        }
+        .organizer-signature {
+            float: left; /* منظم الموقف في اليسار */
+            text-align: left;
+        }
+        .signature-line {
+            margin-top: 10px; /* space between text and signature line */
+        }
+        
         .department { text-align: center; margin-top: 10px; font-weight: bold; }
         
         /* طباعة CSS */
         @media print { 
             .no-print { display: none; } 
-            body { font-size: 12px; } /* حجم خط أصغر للطباعة */
+            body { font-size: 12px; }
             table { font-size: 11px; }
             th, td { padding: 3px; }
             .header { margin-bottom: 10px; }
             .title { font-size: 16px; }
             .subtitle { font-size: 12px; }
             .table-title { font-size: 13px; margin-top: 8px; }
-            .two-column-tables { flex-wrap: nowrap; } /* تمنع الالتفاف في الطباعة لتبقى جنبًا إلى جنب */
+            .two-column-tables { flex-wrap: nowrap; }
+            .signature-block { width: 48%; } /* Maintain width for print */
         }
     </style>
 </head>
@@ -49,11 +73,6 @@
 <div class="container" lang="ar" dir="rtl">
 
     <div class="header">
-        <!-- 
-            *** هام جداً: استبدل 'images/your_logo_file.png' بالمسار الفعلي لملف شعارك في مجلد public.
-            مثال: إذا كان شعارك باسم 'karbala_logo.png' ووضعته في public/images/، 
-            فاجعله asset('images/karbala_logo.png')
-        -->
         <img src="{{ asset('images/my_city_logo.png') }}" 
              alt="شعار المدينة" 
              class="logo"
@@ -83,7 +102,7 @@
                     <tr>
                         <th>م</th>
                         <th>الاسم</th>
-                        <th>الرقم الوظيفي</th> <!-- تم التعديل هنا -->
+                        <th>الرقم الوظيفي</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -107,7 +126,7 @@
                     <tr>
                         <th>م</th>
                         <th>الاسم</th>
-                        <th>الرقم الوظيفي</th> <!-- تم التعديل هنا -->
+                        <th>الرقم الوظيفي</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -123,12 +142,71 @@
         </div>
         @endif
     </div>
-    {{-- نهاية حاوية الجداول ذات العمودين --}}
 
+    <div class="two-column-tables">
+        @if (!empty($record->eid_leaves))
+        <div>
+            <div class="table-title">إجازات الأعياد</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>م</th>
+                        <th>نوع العيد</th>
+                        <th>الاسم</th>
+                        <th>الرقم الوظيفي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($record->eid_leaves as $index => $leave)
+                    <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td>
+                            @php
+                                $eidType = $leave['eid_type'] ?? '';
+                                echo match ($eidType) {
+                                    'eid_alfitr' => 'عيد الفطر',
+                                    'eid_aladha' => 'عيد الأضحى',
+                                    'eid_algahdir' => 'عيد الغدير',
+                                    default => $eidType
+                                };
+                            @endphp
+                        </td>
+                        <td>{{ $leave['employee_name'] ?? '' }}</td>
+                        <td>{{ $leave['employee_number'] ?? '' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+
+        @if (!empty($record->guard_rest))
+        <div>
+            <div class="table-title">استراحة خفر</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>م</th>
+                        <th>الاسم</th>
+                        <th>الرقم الوظيفي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($record->guard_rest as $index => $rest)
+                    <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ $rest['employee_name'] ?? '' }}</td>
+                        <td>{{ $rest['employee_number'] ?? '' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+    </div>
 
     {{-- الجداول الأخرى (تظهر بشكل عمودي) --}}
 
-    {{-- 3. جدول الإجازات الزمنية --}}
     @if (!empty($record->temporary_leaves))
     <div class="table-title">الإجازات الزمنية</div>
     <table>
@@ -136,7 +214,7 @@
             <tr>
                 <th>م</th>
                 <th>الاسم</th>
-                <th>الرقم الوظيفي</th> <!-- تم التعديل هنا -->
+                <th>الرقم الوظيفي</th>
                 <th>الوقت</th>
             </tr>
         </thead>
@@ -156,7 +234,6 @@
     </table>
     @endif
 
-    {{-- 4. جدول إجازة الوفاة --}}
     @if (!empty($record->bereavement_leaves))
     <div class="table-title">إجازة الوفاة</div>
     <table>
@@ -164,7 +241,7 @@
             <tr>
                 <th>م</th>
                 <th>الاسم</th>
-                <th>الرقم الوظيفي</th> <!-- تم التعديل هنا -->
+                <th>الرقم الوظيفي</th>
             </tr>
         </thead>
         <tbody>
@@ -179,7 +256,6 @@
     </table>
     @endif
 
-    {{-- 5. جدول إجازة بدون راتب --}}
     @if (!empty($record->unpaid_leaves))
     <div class="table-title">إجازة بدون راتب</div>
     <table>
@@ -187,7 +263,7 @@
             <tr>
                 <th>م</th>
                 <th>الاسم</th>
-                <th>الرقم الوظيفي</th> <!-- تم التعديل هنا -->
+                <th>الرقم الوظيفي</th>
             </tr>
         </thead>
         <tbody>
@@ -202,7 +278,6 @@
     </table>
     @endif
 
-    {{-- 6. جدول الغياب --}}
     @if (!empty($record->absences))
     <div class="table-title">الغياب</div>
     <table>
@@ -210,7 +285,7 @@
             <tr>
                 <th>م</th>
                 <th>الاسم</th>
-                <th>الرقم الوظيفي</th> <!-- تم التعديل هنا -->
+                <th>الرقم الوظيفي</th>
                 <th>من تاريخ</th>
                 <th>إلى تاريخ</th>
             </tr>
@@ -229,7 +304,6 @@
     </table>
     @endif
 
-    {{-- 7. جدول الإجازات الطويلة --}}
     @if (!empty($record->long_leaves))
     <div class="table-title">الإجازات الطويلة</div>
     <table>
@@ -237,7 +311,7 @@
             <tr>
                 <th>م</th>
                 <th>الاسم</th>
-                <th>الرقم الوظيفي</th> <!-- تم التعديل هنا -->
+                <th>الرقم الوظيفي</th>
                 <th>من تاريخ</th>
                 <th>إلى تاريخ</th>
             </tr>
@@ -256,7 +330,6 @@
     </table>
     @endif
 
-    {{-- 8. جدول الإجازات المرضية --}}
     @if (!empty($record->sick_leaves))
     <div class="table-title">الإجازات المرضية</div>
     <table>
@@ -264,7 +337,7 @@
             <tr>
                 <th>م</th>
                 <th>الاسم</th>
-                <th>الرقم الوظيفي</th> <!-- تم التعديل هنا -->
+                <th>الرقم الوظيفي</th>
                 <th>من تاريخ</th>
                 <th>إلى تاريخ</th>
             </tr>
@@ -285,20 +358,22 @@
 
     <table>
         @php
-            // إعادة حساب الإحصائيات كما في Filament
-            $totalRequired = 86; // الملاك
-            $totalEmployees = \App\Models\Employee::where('is_active', 1)->count(); // الموجد الحالي
-            $shortage = $totalRequired - $totalEmployees; // النقص
+            $totalRequired = 86;
+            $totalEmployees = \App\Models\Employee::where('is_active', 1)->count();
+            $shortage = $totalRequired - $totalEmployees;
 
             $paidLeavesCount = count($record->annual_leaves ?? [])
-                             + count($record->periodic_leaves ?? [])
-                             + count($record->sick_leaves ?? [])
-                             + count($record->bereavement_leaves ?? []);
-            
+                               + count($record->periodic_leaves ?? [])
+                               + count($record->sick_leaves ?? [])
+                               + count($record->bereavement_leaves ?? [])
+                               + count($record->eid_leaves ?? []);
+
             $unpaidLeavesCount = count($record->unpaid_leaves ?? []);
             $absencesCount = count($record->absences ?? []);
+            $temporaryLeavesCount = count($record->temporary_leaves ?? []);
+            $guardRestCount = count($record->guard_rest ?? []);
 
-            $actualAttendance = $totalEmployees - ($paidLeavesCount + $unpaidLeavesCount + $absencesCount);
+            $actualAttendance = $totalEmployees - ($paidLeavesCount + $unpaidLeavesCount + $absencesCount + $temporaryLeavesCount);
 
         @endphp
         <tr>
@@ -309,6 +384,8 @@
             <th>إجازات براتب</th>
             <th>إجازات بدون راتب</th>
             <th>الغياب</th>
+            <th>استراحة خفر</th>
+            <th>إجازات زمنية</th>
             <th>تعيين</th>
             <th>نقل</th>
             <th>فصل</th>
@@ -321,18 +398,33 @@
             <td>{{ $paidLeavesCount }}</td>
             <td>{{ $unpaidLeavesCount }}</td>
             <td>{{ $absencesCount }}</td>
-            <td>0</td> <!-- لا تزال قيم ثابتة، قم بتغييرها إذا أصبحت ديناميكية في المستقبل -->
-            <td>0</td> <!-- لا تزال قيم ثابتة، قم بتغييرها إذا أصبحت ديناميكية في المستقبل -->
-            <td>0</td> <!-- لا تزال قيم ثابتة، قم بتغييرها إذا أصبحت ديناميكية في المستقبل -->
+            <td>{{ $guardRestCount }}</td>
+            <td>{{ $temporaryLeavesCount }}</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
         </tr>
     </table>
 
-    <div class="footer">
-        <div>مسؤول شعبة الخدمية</div>
-        <div class="signature">
-            <div>التوقيع: ........................</div>
-            <div>التاريخ: {{ \Carbon\Carbon::parse($record->date)->format('d/m/Y') }}</div>
+    <div class="signatures-container">
+        {{-- مسؤول شعبة الخدمية في اليمين --}}
+        <div class="signature-block responsible-signature">
+            <div>مسؤول شعبة الخدمية</div>
+            <div class="signature-line">
+                <div>التوقيع: ........................</div>
+                <div>التاريخ: {{ \Carbon\Carbon::parse($record->date)->format('d/m/Y') }}</div>
+            </div>
         </div>
+        
+        {{-- منظم الموقف في اليسار --}}
+        @if (!empty($record->organizer_employee_name))
+        <div class="signature-block organizer-signature">
+            <div>منظم الموقف: {{ $record->organizer_employee_name }}</div>
+            <div class="signature-line">
+                <div>التوقيع: ........................</div>
+            </div>
+        </div>
+        @endif
     </div>
 
     <div class="no-print" style="margin-top: 20px; text-align: center;">

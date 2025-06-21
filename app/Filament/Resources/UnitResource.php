@@ -20,6 +20,12 @@ class UnitResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
     protected static ?string $modelLabel = 'وحدة';
     protected static ?string $pluralModelLabel = 'الوحدات';
+    protected static ?string $navigationGroup = 'إدارة الوحدات';
+    protected static ?string $navigationLabel = 'الوحدات';
+    protected static ?int $navigationSort = 2; // ترتيب الظهور في القائمة الجانبية
+    protected static ?string $slug = 'units'; // المسار للوصول إلى هذه الوحدة
+    protected static ?string $title = 'إدارة الوحدات'; // عنوان الصفحة
+    protected static ?string $description = 'إدارة الوحدات المختلفة في النظام'; // وصف الصفحة
 
     public static function form(Form $form): Form
     {
