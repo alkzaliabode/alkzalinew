@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 class MonthlyCleaningReport extends Page implements HasTable
 {
     use InteractsWithTable;
-
+   
     protected static string $view = 'filament.pages.monthly-cleaning-report';
 
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
