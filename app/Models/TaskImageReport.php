@@ -14,6 +14,7 @@ class TaskImageReport extends Model
         'unit_type',
         'location',
         'task_type',
+        'task_id', // <--- أضف هذا السط
         'before_images',
         'after_images',
         'status',

@@ -16,6 +16,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin; // استيراد FilamentShieldPlugin لتكامل الصلاحيات
 
@@ -58,13 +59,13 @@ class AdminPanelProvider extends PanelProvider
             // تمكين صفحة تسجيل الدخول المدمجة في Filament.
             ->login()
             // تحديد لوحة الألوان المخصصة التي ستستخدمها لوحة الإدارة.
-            ->colors([
-                'danger'  => Color::Rose,    // لون للأخطار أو التحذيرات الجسيمة.
-                'gray'    => Color::Gray,    // لون للعناصر المحايدة والخلفيات.
-                'info'    => Color::Blue,    // لون للمعلومات أو الإشعارات.
-                'primary' => Color::Indigo,  // اللون الأساسي المستخدم في الواجهة.
-                'success' => Color::Emerald, // لون لعمليات النجاح أو الإيجابية.
-                'warning' => Color::Orange,  // لون للتحذيرات الخفيفة أو التنبيهات.
+           ->colors([
+                'danger'  => Color::Rose,
+                'gray'    => Color::Gray,
+                'info'    => Color::Blue,
+                'primary' => Color::Orange,  // ✅ تم تغيير اللون الأساسي إلى البرتقالي
+                'success' => Color::Emerald,
+                'warning' => Color::Yellow,  // ✅ (اختياري) يمكنك تغيير لون التحذير لتمييزه عن الأساسي
             ])
             // تطبيق الثيم المخصص لـ Filament من ملف CSS.
             ->viteTheme('resources/css/filament/admin/theme.css')

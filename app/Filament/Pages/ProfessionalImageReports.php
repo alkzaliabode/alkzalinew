@@ -13,6 +13,10 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Actions;
 use Carbon\Carbon;
+use Filament\Forms\Components;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\TextEntry;
+
 
 class ProfessionalImageReports extends Page implements HasTable
 {
@@ -24,6 +28,8 @@ class ProfessionalImageReports extends Page implements HasTable
     protected static ?string $navigationLabel = 'التقارير المصورة الاحترافية';
     protected static ?string $title = '📷 التقارير المصورة الاحترافية';
     protected static ?string $navigationGroup = 'التقارير والإحصائيات';
+
+
 
     protected function getTableColumns(): array
     {
@@ -97,7 +103,7 @@ class ProfessionalImageReports extends Page implements HasTable
             Tables\Actions\ViewAction::make()
                 ->label('عرض التفاصيل')
                 ->icon('heroicon-o-eye')
-                ->modalContent(fn (TaskImageReport $record) => view('filament.pages.image-report-details', [
+                ->modalContent(fn (TaskImageReport $record) => view('filament.pages.image-report', [
                     'record' => $record,
                     'unitName' => $record->unit_type === 'cleaning' ? 'النظافة العامة' : 'المنشآت الصحية'
                 ]))
@@ -160,6 +166,7 @@ class ProfessionalImageReports extends Page implements HasTable
                         'إدامة' => 'إدامة',
                         'صيانة' => 'صيانة',
                     ]),
+                    
             ])
             ->actions($this->getTableActions())
             ->bulkActions([]);

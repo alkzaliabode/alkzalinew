@@ -2,178 +2,183 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-<title>تقرير صور المهمة - {{ $record->date ? $record->date->format('Y-m-d') : 'بدون تاريخ' }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير صور المهمة - {{ $record->date ? $record->date->format('Y-m-d') : 'بدون تاريخ' }}</title>
     <style>
         @page {
             size: A4 portrait;
-            margin: 15mm;
+            margin: 5mm;
         }
+
         body {
             font-family: 'Arial', sans-serif;
-            line-height: 1.6;
+            direction: rtl;
+            text-align: right;
+            font-size: 11pt;
             color: #333;
-            background: white;
             margin: 0;
             padding: 0;
+            background: #fff;
+            page-break-inside: avoid;
         }
+
         .container {
-            max-width: 800px;
-            margin: auto;
-            padding: 15px;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            page-break-inside: avoid;
         }
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #0056b3;
-            margin-bottom: 30px;
-            padding-bottom: 10px;
+
+        .header, .section, .signature, .images-grid, table.details {
+            page-break-inside: avoid;
         }
+
         .header h1 {
+            text-align: center;
             color: #0056b3;
-            font-size: 22pt;
-            margin: 0;
         }
-        .info {
-            margin-bottom: 20px;
-        }
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-        .info-item span:first-child {
-            font-weight: bold;
-        }
-        .section-title {
-            font-size: 16pt;
-            color: #0056b3;
-            margin-top: 30px;
-            margin-bottom: 10px;
-            border-bottom: 1px dashed #ccc;
-        }
-        .images {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .images img {
-            width: 180px;
-            height: 130px;
-            object-fit: cover;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-        .no-images {
-            color: #777;
-            font-style: italic;
-            margin-bottom: 15px;
-        }
-        .notes {
-            background: #eef7ff;
-            padding: 10px;
-            border-left: 4px solid #007bff;
+
+        table.details {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 15px;
-            border-radius: 5px;
         }
+
+        table.details th,
+        table.details td {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 10pt;
+            color: white;
+            display: inline-block;
+        }
+        .badge-success { background: #28a745; }
+        .badge-warning { background: #ffc107; color: #000; }
+        .badge-danger { background: #dc3545; }
+        .badge-primary { background: #007bff; }
+
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 10px;
+            justify-items: center;
+            margin-top: 15px;
+        }
+
+        .images-grid img {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            border: 2px solid #bbb;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
         .signature {
-            margin-top: 50px;
+            margin-top: 40px;
             display: flex;
             justify-content: space-between;
         }
+
         .signature div {
-            width: 40%;
+            width: 45%;
             text-align: center;
-        }
-        .signature-line {
-            margin-top: 50px;
             border-top: 1px solid #000;
-        }
-        .footer {
-            text-align: center;
-            font-size: 10pt;
-            color: #666;
-            margin-top: 50px;
-            border-top: 1px solid #ccc;
             padding-top: 10px;
         }
 
+        .print-controls {
+            text-align: center;
+            margin-top: 30px;
+        }
+
         @media print {
-            .no-print {
+            .print-controls {
                 display: none !important;
             }
             body {
-                print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
     </style>
 </head>
 <body>
 
+<div class="print-controls">
+    <button onclick="window.print()" style="
+        padding: 10px 20px;
+        font-size: 16px;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-left: 10px;
+    ">🖨️ طباعة التقرير</button>
+
+    <button onclick="window.close()" style="
+        padding: 10px 20px;
+        font-size: 16px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    ">❌ إغلاق</button>
+</div>
+
 <div class="container">
     <div class="header">
         <h1>التقرير المصور للمهمة</h1>
     </div>
 
-    <div class="info">
-<div class="info-item">
-    <span>📅 التاريخ:</span>
-    <span>{{ $record->date ? $record->date->format('Y-m-d') : 'غير محدد' }}</span>
-</div>
-        <div class="info-item"><span>📍 الموقع:</span> <span>{{ $record->location }}</span></div>
-        <div class="info-item"><span>🧩 نوع المهمة:</span> <span>{{ $record->task_type }}</span></div>
-        <div class="info-item"><span>🗂️ الوحدة:</span> <span>{{ $record->unit_type === 'cleaning' ? 'النظافة العامة' : 'المنشآت الصحية' }}</span></div>
-        <div class="info-item"><span>📌 الحالة:</span> <span>{{ $record->status }}</span></div>
+    <div class="section">
+        <table class="details">
+            <tr><th>التاريخ</th><td>{{ $record->date ? $record->date->format('Y-m-d') : 'غير محدد' }}</td></tr>
+            <tr><th>الموقع</th><td>{{ $record->location ?? 'غير متوفر' }}</td></tr>
+            <tr><th>الوحدة</th><td><span class="badge {{ $record->unit_type === 'cleaning' ? 'badge-success' : 'badge-primary' }}">
+                {{ $record->unit_type === 'cleaning' ? 'النظافة العامة' : 'المنشآت الصحية' }}</span></td></tr>
+            <tr><th>نوع المهمة</th><td><span class="badge {{ $record->task_type == 'إدامة' ? 'badge-primary' : 'badge-warning' }}">{{ $record->task_type }}</span></td></tr>
+            <tr><th>الحالة</th><td><span class="badge
+                @if($record->status == 'مكتمل') badge-success
+                @elseif($record->status == 'قيد التنفيذ') badge-warning
+                @else badge-danger
+                @endif
+            ">{{ $record->status }}</span></td></tr>
+        </table>
     </div>
 
-    @if($record->notes)
-        <div class="notes">
-            <strong>ملاحظات:</strong>
-            <p>{{ $record->notes }}</p>
-        </div>
-    @endif
-
-    <div class="section-title">📸 صور قبل التنفيذ</div>
-    @if(is_array($record->before_images_for_table) && count($record->before_images_for_table) > 0)
-        <div class="images">
-            @foreach($record->before_images_for_table as $url)
-                <img src="{{ $url }}" alt="صورة قبل التنفيذ">
+    <div class="section">
+        <h3>صور قبل التنفيذ:</h3>
+        <div class="images-grid">
+            @foreach($record->before_images_urls as $img)
+                @if($img['exists'])
+                    <img src="{{ $img['url'] }}" alt="صورة قبل التنفيذ">
+                @endif
             @endforeach
         </div>
-    @else
-        <p class="no-images">لا توجد صور قبل التنفيذ.</p>
-    @endif
+    </div>
 
-    <div class="section-title">📸 صور بعد التنفيذ</div>
-    @if(is_array($record->after_images_for_table) && count($record->after_images_for_table) > 0)
-        <div class="images">
-            @foreach($record->after_images_for_table as $url)
-                <img src="{{ $url }}" alt="صورة بعد التنفيذ">
+    <div class="section">
+        <h3>صور بعد التنفيذ:</h3>
+        <div class="images-grid">
+            @foreach($record->after_images_urls as $img)
+                @if($img['exists'])
+                    <img src="{{ $img['url'] }}" alt="صورة بعد التنفيذ">
+                @endif
             @endforeach
         </div>
-    @else
-        <p class="no-images">لا توجد صور بعد التنفيذ.</p>
-    @endif
+    </div>
 
     <div class="signature">
-        <div>
-            <div class="signature-line"></div>
-            <p>مسؤول الشعبة</p>
-        </div>
-        <div>
-            <div class="signature-line"></div>
-            <p>مدير القسم</p>
-        </div>
-    </div>
-
-    <div class="footer">
-        <p>تم إنشاء التقرير بتاريخ: {{ now()->format('Y-m-d H:i') }}</p>
-        <p>&copy; {{ date('Y') }} {{ config('app.name', 'نظام التقارير') }}</p>
-    </div>
-
-    <div class="no-print" style="text-align: center; margin-top: 20px;">
-        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; background: #28a745; color: white; border: none; border-radius: 4px;">🖨️ طباعة التقرير</button>
-        <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px; background: #dc3545; color: white; border: none; border-radius: 4px; margin-right: 10px;">❌ إغلاق</button>
+        <div>توقيع مسؤول الشعبة</div>
+        <div>توقيع مدير القسم</div>
     </div>
 </div>
 

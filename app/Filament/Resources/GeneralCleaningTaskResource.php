@@ -5,15 +5,15 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\GeneralCleaningTaskResource\Pages;
 use App\Models\GeneralCleaningTask;
 use App\Models\Employee;
-use App\Models\Unit; // تأكد من استيراد موديل الوحدة
-use App\Models\UnitGoal; // ✅ هام: استيراد موديل UnitGoal
-
+use App\Models\Unit;
+use App\Models\UnitGoal;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Fieldset;
@@ -21,9 +21,13 @@ use Filament\Forms\Components\Grid;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\BadgeColumn;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportBulkAction;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
 use Illuminate\Support\HtmlString;
+use Illuminate\Database\Eloquent\Builder;
 
 class GeneralCleaningTaskResource extends Resource
 {
@@ -41,12 +45,24 @@ class GeneralCleaningTaskResource extends Resource
             ->schema([
                 Section::make('المعلومات الأساسية')
                     ->schema([
+                        // ✅ تم تعديل هذه الحقول لتكون مخفية تمامًا ولا يتم تعبئتها من الفورم مباشرة
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('created_by')
+                                    ->hidden(true)
+                                    ->dehydrated(false), // يمنع إرسال قيمته إذا كان مخفياً
+                                TextInput::make('updated_by')
+                                    ->hidden(true)
+                                    ->dehydrated(false), // يمنع إرسال قيمته إذا كان مخفياً
+                            ]),
                         Grid::make(3)
                             ->schema([
                                 DatePicker::make('date')
                                     ->required()
                                     ->label('التاريخ')
-                                    ->default(now()),
+                                    ->default(now())
+                                    ->native(false)
+                                    ->displayFormat('Y-m-d'),
 
                                 Select::make('shift')
                                     ->options([
@@ -55,7 +71,8 @@ class GeneralCleaningTaskResource extends Resource
                                         'ليلي' => 'ليلي',
                                     ])
                                     ->required()
-                                    ->label('الوردية'), // تم تغيير التسمية من "الوجبة" إلى "الوردية"
+                                    ->label('الوجبة')
+                                    ->native(false),
 
                                 Select::make('status')
                                     ->options([
@@ -64,23 +81,27 @@ class GeneralCleaningTaskResource extends Resource
                                         'ملغى' => 'ملغى',
                                     ])
                                     ->required()
-                                    ->label('الحالة'),
+                                    ->label('الحالة')
+                                    ->native(false),
                             ]),
-                        // ✅ إضافة حقل related_goal_id هنا
+                        
                         Select::make('related_goal_id')
                             ->label('الهدف المرتبط')
-                            ->relationship('relatedGoal', 'goal_text') // يعرض 'goal_text' من موديل UnitGoal
-                            ->searchable() // يسمح بالبحث عن الأهداف
-                            ->required() // اجعله مطلوباً لضمان اختيار هدف
-                            ->placeholder('اختر الهدف المرتبط'), // نص توضيحي
+                            ->relationship('relatedGoal', 'goal_text')
+                            ->searchable()
+                            ->required()
+                            ->placeholder('اختر الهدف المرتبط')
+                            ->helperText('اختر الهدف الاستراتيجي أو التشغيلي الذي تساهم فيه هذه المهمة.')
+                            ->native(false),
 
                         Select::make('unit_id')
                             ->label('الوحدة')
                             ->default(fn () => Unit::where('name', 'وحدة النظافة العامة')->first()?->id)
-                            ->hidden() // إخفاء الحقل عن المستخدم
+                            ->hidden()
                             ->relationship('unit', 'name')
                             ->required(),
                     ]),
+                
 
                 Section::make('تفاصيل المهمة')
                     ->schema([
@@ -93,7 +114,8 @@ class GeneralCleaningTaskResource extends Resource
                                     ])
                                     ->required()
                                     ->label('نوع المهمة')
-                                    ->live(), // مهم لتحديث الحقول بناءً على الاختيار
+                                    ->live()
+                                    ->native(false),
 
                                 Select::make('location')
                                     ->options([
@@ -124,7 +146,8 @@ class GeneralCleaningTaskResource extends Resource
                                         'قاعة 12 الأعلى' => 'قاعة 12 الأعلى',
                                         'قاعة 13 الأسفل' => 'قاعة 13 الأسفل',
                                         'قاعة 13 الأعلى' => 'قاعة 13 الأعلى',
-                                        // ... جميع القاعات الأخرى
+                                        // المناطق الخارجية
+                                        'جميع القواطع الخارجية' => 'جميع القواطع الخارجية',
                                         'الترامز' => 'الترامز',
                                         'السجاد' => 'السجاد',
                                         'الحاويات' => 'الحاويات',
@@ -134,7 +157,8 @@ class GeneralCleaningTaskResource extends Resource
                                     ->required()
                                     ->label('الموقع')
                                     ->searchable()
-                                    ->live(), // مهم لتحديث الحقول بناءً على الاختيار
+                                    ->live()
+                                    ->native(false),
                             ]),
 
                         Fieldset::make('تفاصيل التنفيذ')
@@ -182,7 +206,7 @@ class GeneralCleaningTaskResource extends Resource
                                             TextInput::make('small_containers_count')
                                                 ->numeric()->minValue(0)->label('عدد الحاويات الصغيرة المفرغة والمدامة')->columnSpan(1),
                                         ]);
-                                } elseif ($location === 'الجامع' || $location === 'المركز الصحي') {
+                                } elseif ($location === 'الجامع' || $location === 'المركز الصحي' || $location === 'جميع القواطع الخارجية') {
                                     $fields[] = Grid::make(2)
                                         ->schema([
                                             TextInput::make('maintenance_details')
@@ -194,6 +218,16 @@ class GeneralCleaningTaskResource extends Resource
                                 return $fields;
                             })
                             ->hidden(fn ($get) => empty($get('location'))),
+
+                        Fieldset::make('تفاصيل القواطع الخارجية')
+                            ->schema([
+                                TextInput::make('external_partitions_count')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->label('عدد القواطع الخارجية المدامة')
+                                    ->hidden(fn ($get) => $get('location') !== 'جميع القواطع الخارجية'),
+                            ])
+                            ->hidden(fn ($get) => $get('location') !== 'جميع القواطع الخارجية'),
                     ]),
 
                 Section::make('الموارد المستخدمة وساعات العمل')
@@ -232,7 +266,8 @@ class GeneralCleaningTaskResource extends Resource
                                         'عبوة' => 'عبوة',
                                         'أخرى' => 'أخرى',
                                     ])
-                                    ->required(),
+                                    ->required()
+                                    ->native(false),
                             ])
                             ->columns(4)
                             ->createItemButtonLabel('إضافة مورد جديد')
@@ -254,7 +289,8 @@ class GeneralCleaningTaskResource extends Resource
                                         ->pluck('name', 'id'))
                                     ->required()
                                     ->searchable()
-                                    ->columnSpan(2),
+                                    ->columnSpan(2)
+                                    ->native(false),
 
                                 Select::make('employee_rating')
                                     ->label('تقييم الأداء')
@@ -265,7 +301,8 @@ class GeneralCleaningTaskResource extends Resource
                                         4 => '★★★★',
                                         5 => '★★★★★ (ممتاز)',
                                     ])
-                                    ->required(),
+                                    ->required()
+                                    ->native(false),
                             ])
                             ->columns(3)
                             ->createItemButtonLabel('إضافة منفذ جديد'),
@@ -281,7 +318,8 @@ class GeneralCleaningTaskResource extends Resource
                             ->multiple()
                             ->directory('general_cleaning_tasks/before')
                             ->imageEditor()
-                            ->columnSpan(1),
+                            ->columnSpan(1)
+                            ->helperText('يمكنك رفع عدة صور توضح حالة الموقع قبل بدء المهمة.'),
 
                         FileUpload::make('after_images')
                             ->label('صور بعد التنفيذ')
@@ -289,22 +327,34 @@ class GeneralCleaningTaskResource extends Resource
                             ->multiple()
                             ->directory('general_cleaning_tasks/after')
                             ->imageEditor()
-                            ->columnSpan(1),
+                            ->columnSpan(1)
+                            ->helperText('يمكنك رفع عدة صور توضح حالة الموقع بعد انتهاء المهمة.'),
                     ])
                     ->columns(2),
             ]);
     }
 
-    public static function table(Tables\Table $table): Tables\Table
+    public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('date')
+                TextColumn::make('date')
                     ->label('التاريخ')
                     ->date('Y-m-d')
                     ->sortable(),
+                // أضف هذه الأعمدة في قائمة الأعمدة
+                TextColumn::make('creator.name')
+                    ->label('أنشأها المشرف')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true), // يمكن إخفاؤها افتراضياً
+                TextColumn::make('editor.name')
+                    ->label('عدّلها المشرف')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true), // يمكن إخفاؤها افتراضياً
 
-                Tables\Columns\TextColumn::make('task_type')
+                TextColumn::make('task_type')
                     ->label('نوع المهمة')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -313,11 +363,11 @@ class GeneralCleaningTaskResource extends Resource
                         default => 'gray',
                     }),
 
-                Tables\Columns\TextColumn::make('location')
+                TextColumn::make('location')
                     ->label('الموقع')
                     ->searchable()
                     ->sortable()
-                    ->html() // مهم: يسمح بعرض HTML
+                    ->html()
                     ->formatStateUsing(function (string $state): HtmlString {
                         $iconSvg = '
                             <svg class="h-5 w-5 text-blue-600 transition duration-300 transform group-hover:scale-125" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -333,11 +383,11 @@ class GeneralCleaningTaskResource extends Resource
                         );
                     }),
 
-                Tables\Columns\TextColumn::make('shift')
-                    ->label('الوجبة') // تم تغيير التسمية من "الوجبة" إلى "الوردية"
+                TextColumn::make('shift')
+                    ->label('الوجبة')
                     ->toggleable(),
 
-                Tables\Columns\BadgeColumn::make('status')
+                BadgeColumn::make('status')
                     ->label('الحالة')
                     ->colors([
                         'success' => 'مكتمل',
@@ -345,86 +395,137 @@ class GeneralCleaningTaskResource extends Resource
                         'danger' => 'ملغى',
                     ]),
 
-                Tables\Columns\TextColumn::make('mats_count')
-                    ->label('عدد المنادر المدامة')
+                TextColumn::make('external_partitions_count')
+                    ->label('القواطع الخارجية')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('pillows_count')
-                    ->label('عدد الوسادات المدامة')
+                ImageColumn::make('before_images')
+                    ->label('صور قبل')
+                    ->height(80)
+                    ->width(80)
+                    ->circular()
+                    ->stacked()
+                    ->limit(3)
+                    ->limitedRemainingText()
+                    ->toggleable(),
+
+                ImageColumn::make('after_images')
+                    ->label('صور بعد')
+                    ->height(80)
+                    ->width(80)
+                    ->circular()
+                    ->stacked()
+                    ->limit(3)
+                    ->limitedRemainingText()
+                    ->toggleable(),
+
+                TextColumn::make('mats_count')
+                    ->label('المنادر المدامة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('fans_count')
-                    ->label('عدد المراوح المدامة')
+                TextColumn::make('pillows_count')
+                    ->label('الوسادات المدامة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('windows_count')
-                    ->label('عدد النوافذ المدامة')
+                TextColumn::make('fans_count')
+                    ->label('المراوح المدامة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('carpets_count')
-                    ->label('عدد السجاد المدام')
+                TextColumn::make('windows_count')
+                    ->label('النوافذ المدامة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('blankets_count')
-                    ->label('عدد البطانيات المدامة')
+                TextColumn::make('carpets_count')
+                    ->label('السجاد المدام')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('beds_count')
-                    ->label('عدد الأسرة')
+                TextColumn::make('blankets_count')
+                    ->label('البطانيات المدامة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('beneficiaries_count')
-                    ->label('عدد المستفيدين')
+                TextColumn::make('beds_count')
+                    ->label('الأسرة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('filled_trams_count')
-                    ->label('عدد الترامز المملوئة')
+                TextColumn::make('beneficiaries_count')
+                    ->label('المستفيدون')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('carpets_laid_count')
-                    ->label('عدد السجاد المفروش')
+                TextColumn::make('filled_trams_count')
+                    ->label('الترامز المملوئة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('large_containers_count')
-                    ->label('عدد الحاويات الكبيرة')
+                TextColumn::make('carpets_laid_count')
+                    ->label('السجاد المفروش')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('small_containers_count')
-                    ->label('عدد الحاويات الصغيرة')
+                TextColumn::make('large_containers_count')
+                    ->label('الحاويات الكبيرة')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('maintenance_details')
+                TextColumn::make('small_containers_count')
+                    ->label('الحاويات الصغيرة')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('maintenance_details')
                     ->label('تفاصيل الإدامة')
                     ->words(10)
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('employeeTasks.employee.name')
-                    ->label('المنفذون')
+                TextColumn::make('working_hours')
+                    ->label('ساعات العمل')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(),
+
+                TextColumn::make('resources_used')
+                    ->label('الموارد المستخدمة')
+                    ->formatStateUsing(function (?array $state): HtmlString {
+                        if (empty($state)) {
+                            return new HtmlString('لا توجد موارد');
+                        }
+                        $items = [];
+                        foreach ($state as $resource) {
+                            $name = $resource['name'] ?? 'غير محدد';
+                            $quantity = $resource['quantity'] ?? 'غير محدد';
+                            $unit = $resource['unit'] ?? '';
+                            $items[] = "{$name} ({$quantity} {$unit})";
+                        }
+                        return new HtmlString(implode('<br>', $items));
+                    })
+                    ->listWithLineBreaks()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('employeeTasks.employee.name')
+                    ->label('المنفذون والتقييم')
                     ->listWithLineBreaks()
                     ->limitList(2)
                     ->expandableLimitedList()
@@ -433,7 +534,7 @@ class GeneralCleaningTaskResource extends Resource
                         foreach ($record->employeeTasks as $employeeTask) {
                             $employeeName = $employeeTask->employee->name ?? 'غير معروف';
                             $rating = $employeeTask->employee_rating;
-                            $ratingText = match ($rating) {
+                            $ratingText = match ((int)$rating) {
                                 1 => 'ضعيف ★',
                                 2 => '★★',
                                 3 => 'متوسط ★★★',
@@ -441,11 +542,33 @@ class GeneralCleaningTaskResource extends Resource
                                 5 => 'ممتاز ★★★★★',
                                 default => 'غير مقيم',
                             };
-                            $ratingClass = 'rating-' . str_replace([' ', '★'], ['-', ''], $ratingText);
-                            $summary .= '<div class="task-item">' . $employeeName . ' (<span class="' . $ratingClass . '">' . $ratingText . '</span>)</div>';
+                            $summary .= '<div class="flex items-center gap-1">' . $employeeName . ' (<span class="font-bold">' . $ratingText . '</span>)</div>';
                         }
                         return new HtmlString($summary);
                     }),
+
+                TextColumn::make('relatedGoal.goal_text')
+                    ->label('الهدف المرتبط')
+                    ->searchable()
+                    ->sortable()
+                    ->words(15)
+                    ->toggleable(),
+
+                TextColumn::make('unit.name')
+                    ->label('الوحدة')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('created_at')
+                    ->label('تاريخ الإنشاء')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('updated_at')
+                    ->label('تاريخ آخر تحديث')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('date', 'desc')
             ->filters([
@@ -454,7 +577,8 @@ class GeneralCleaningTaskResource extends Resource
                     ->options([
                         'إدامة' => 'إدامة',
                         'صيانة' => 'صيانة',
-                    ]),
+                    ])
+                    ->native(false),
 
                 Tables\Filters\SelectFilter::make('status')
                     ->label('حالة المهمة')
@@ -462,20 +586,21 @@ class GeneralCleaningTaskResource extends Resource
                         'مكتمل' => 'مكتمل',
                         'قيد التنفيذ' => 'قيد التنفيذ',
                         'ملغى' => 'ملغى',
-                    ]),
+                    ])
+                    ->native(false),
 
                 Tables\Filters\SelectFilter::make('shift')
-                    ->label('الوجبة') // تم تغيير التسمية من "الوجبة" إلى "الوردية"
+                    ->label('الوجبة')
                     ->options([
                         'صباحي' => 'صباحي',
                         'مسائي' => 'مسائي',
                         'ليلي' => 'ليلي',
-                    ]),
+                    ])
+                    ->native(false),
 
                 Tables\Filters\SelectFilter::make('location')
                     ->label('الموقع')
                     ->options([
-                        // قاعات
                         'قاعة 1 الأسفل' => 'قاعة 1 الأسفل',
                         'قاعة 1 الأعلى' => 'قاعة 1 الأعلى',
                         'قاعة 2 الأسفل' => 'قاعة 2 الأسفل',
@@ -502,13 +627,38 @@ class GeneralCleaningTaskResource extends Resource
                         'قاعة 12 الأعلى' => 'قاعة 12 الأعلى',
                         'قاعة 13 الأسفل' => 'قاعة 13 الأسفل',
                         'قاعة 13 الأعلى' => 'قاعة 13 الأعلى',
-                        // ... جميع القاعات الأخرى
+                        'جميع القواطع الخارجية' => 'جميع القواطع الخارجية',
                         'الترامز' => 'الترامز',
                         'السجاد' => 'السجاد',
                         'الحاويات' => 'الحاويات',
                         'الجامع' => 'الجامع',
                         'المركز الصحي' => 'المركز الصحي',
-                    ]),
+                    ])
+                    ->native(false),
+
+                Tables\Filters\SelectFilter::make('employee_id')
+                    ->label('الموظف المنفذ')
+                    ->relationship('employeeTasks.employee', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->native(false),
+
+                Tables\Filters\Filter::make('date_range')
+                    ->form([
+                        DatePicker::make('from_date')->label('من تاريخ')->native(false)->displayFormat('Y-m-d'),
+                        DatePicker::make('to_date')->label('إلى تاريخ')->native(false)->displayFormat('Y-m-d'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from_date'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('date', '>=', $date),
+                            )
+                            ->when(
+                                $data['to_date'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('date', '<=', $date),
+                            );
+                    })
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
@@ -516,13 +666,16 @@ class GeneralCleaningTaskResource extends Resource
 
                 Tables\Actions\EditAction::make()
                     ->label('تعديل'),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(), // أعدت هذا كإجراء افتراضي
+                Tables\Actions\DeleteBulkAction::make(),
                 FilamentExportBulkAction::make('export')
                     ->label('تصدير البيانات'),
             ])
             ->headerActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('إنشاء مهمة جديدة'),
                 FilamentExportHeaderAction::make('export')
                     ->label('تصدير البيانات'),
             ]);

@@ -15,16 +15,14 @@ class UserResource extends Resource
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static ?string $navigationGroup = 'إدارة المستخدمين';
-    protected static ?int $navigationSort = 1;
-    protected static ?string $navigationLabel = 'المستخدمين';
-    protected static ?string $slug = 'users';
-    protected static ?string $recordTitleAttribute = 'name';
-    public static function shouldRegisterNavigation(): bool
-{
-    return auth()->user()?->can('view users') ?? false;
-}
-
+    protected static ?int $navigationSort = 2; // ترتيب الظهور في القائمة الجانبية
+    protected static ?string $recordTitleAttribute = 'name'; // استخدام الاسم كعنوان السجل 
+    protected static ?string $navigationLabel = 'المستخدمين'; // Navigation label in Arabic
+    protected static ?string $navigationGroup = 'إدارة المستخدمين'; // Navigation group in Arabic
+    protected static ?string $modelLabel = 'مستخدم'; // اسم المفرد للمستخدم
+    protected static ?string $pluralModelLabel = 'المستخدمون'; // اسم الجمع للمستخدمين
+    protected static ?string $slug = 'users'; // تعيين slug للموارد
+    protected static ?string $title = 'إدارة المستخدمين'; // عنوان الصفحة 
 
     public static function form(Form $form): Form
     {

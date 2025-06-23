@@ -6,7 +6,7 @@ use App\Filament\Resources\SanitationFacilityTaskResource\Pages;
 use App\Models\SanitationFacilityTask;
 use App\Models\Employee;
 use App\Models\Unit;
-use App\Models\UnitGoal; // ✅ هام: استيراد موديل UnitGoal
+use App\Models\UnitGoal;
 
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -25,6 +25,7 @@ use Filament\Tables\Table;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportBulkAction;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
 use Illuminate\Support\HtmlString;
+use Illuminate\Database\Eloquent\Builder; // تم إضافة استيراد Builder للفلاتر
 
 class SanitationFacilityTaskResource extends Resource
 {
@@ -48,6 +49,8 @@ class SanitationFacilityTaskResource extends Resource
                                     ->required()
                                     ->label('التاريخ')
                                     ->default(now())
+                                    ->native(false) // للحصول على مظهر FilamentDatePicker
+                                    ->displayFormat('Y-m-d')
                                     ->columnSpan(1),
 
                                 Select::make('shift')
@@ -57,7 +60,8 @@ class SanitationFacilityTaskResource extends Resource
                                         'ليلي' => 'ليلي',
                                     ])
                                     ->required()
-                                    ->label('الوجبة') // تم تغيير التسمية من "الوجبة" إلى "الوردية" لتكون أوضح
+                                    ->label('الوجبة')
+                                    ->native(false) // للحصول على مظهر FilamentSelect
                                     ->columnSpan(1),
 
                                 Select::make('status')
@@ -68,29 +72,40 @@ class SanitationFacilityTaskResource extends Resource
                                     ])
                                     ->required()
                                     ->label('الحالة')
+                                    ->native(false) // للحصول على مظهر FilamentSelect
                                     ->columnSpan(1),
 
+                                // حقل unit_id مخفي ويتم تعيين قيمته تلقائياً بواسطة mutateFormDataBeforeCreate
                                 Select::make('unit_id')
                                     ->label('الوحدة')
-                                    ->default(fn () => Unit::where('name', 'وحدة المنشآت الصحية')->first()?->id)
+                                    ->default(fn () => Unit::where('name', 'وحدة المنشآت الصحية')->first()?->id) // تعيين افتراضي
                                     ->hidden() // إخفاء الحقل عن المستخدم
                                     ->relationship('unit', 'name')
                                     ->required()
                                     ->columnSpan(1),
+
+                                // حقول created_by و updated_by مخفية تماماً، وتتم تعبئتها عبر أحداث الموديل (booted method)
+                                TextInput::make('created_by')
+                                    ->hidden(true)
+                                    ->dehydrated(false), // يمنع إرسال قيمته إذا كان مخفياً
+                                TextInput::make('updated_by')
+                                    ->hidden(true)
+                                    ->dehydrated(false), // يمنع إرسال قيمته إذا كان مخفياً
                             ]),
-                        // ✅ إضافة حقل related_goal_id هنا
+                        
                         Select::make('related_goal_id')
                             ->label('الهدف المرتبط')
                             ->relationship('relatedGoal', 'goal_text') // يعرض 'goal_text' من موديل UnitGoal
                             ->searchable() // يسمح بالبحث عن الأهداف
                             ->required() // اجعله مطلوباً لضمان اختيار هدف
-                            ->placeholder('اختر الهدف المرتبط'), // نص توضيحي
+                            ->placeholder('اختر الهدف المرتبط') // نص توضيحي
+                            ->helperText('اختر الهدف الاستراتيجي أو التشغيلي الذي تساهم فيه هذه المهمة.')
+                            ->native(false), // للحصول على مظهر FilamentSelect
 
-                        // ✅ حقل ساعات العمل للمهمة تم نقله إلى نهاية قسم "المعلومات الأساسية"
                         TextInput::make('working_hours')
                             ->numeric()
                             ->minValue(0)
-                            ->maxValue(24) // ساعات العمل لا تتجاوز 24 ساعة
+                            ->maxValue(24) // ساعات العمل لا تتجاوز 24 ساعة منطقياً
                             ->label('إجمالي ساعات العمل للمهمة')
                             ->helperText('إجمالي ساعات العمل التي استغرقتها هذه المهمة.')
                             ->required(),
@@ -107,7 +122,8 @@ class SanitationFacilityTaskResource extends Resource
                                     ])
                                     ->required()
                                     ->label('نوع المهمة')
-                                    ->live(), // مهم لتحديث الحقول بناءً على الاختيار
+                                    ->live() // مهم لتحديث الحقول بناءً على الاختيار
+                                    ->native(false),
 
                                 Select::make('facility_name')
                                     ->options([
@@ -126,7 +142,8 @@ class SanitationFacilityTaskResource extends Resource
                                     ])
                                     ->required()
                                     ->label('اسم المرفق الصحي')
-                                    ->searchable(),
+                                    ->searchable()
+                                    ->native(false),
 
                                 Textarea::make('details')
                                     ->label('تفاصيل إضافية')
@@ -159,14 +176,13 @@ class SanitationFacilityTaskResource extends Resource
 
                                 return $fields;
                             })
-                            ->hidden(fn ($get) => empty($get('task_type'))),
+                            ->hidden(fn ($get) => empty($get('task_type'))), // إخفاء الحقل حتى يتم اختيار نوع المهمة
                     ]),
 
                 Section::make('الموارد المستخدمة')
                     ->collapsible()
                     ->collapsed()
                     ->schema([
-                        // ✅ تم تعديل هذا الجزء ليطابق هيكل جدول النظافة العامة
                         Repeater::make('resources_used')
                             ->label('الموارد المستخدمة')
                             ->schema([
@@ -191,7 +207,8 @@ class SanitationFacilityTaskResource extends Resource
                                         'عبوة' => 'عبوة',
                                         'أخرى' => 'أخرى',
                                     ])
-                                    ->required(),
+                                    ->required()
+                                    ->native(false),
                             ])
                             ->columns(4) // أصبحت 4 أعمدة
                             ->createItemButtonLabel('إضافة مورد جديد')
@@ -204,7 +221,7 @@ class SanitationFacilityTaskResource extends Resource
                     ->schema([
                         Repeater::make('employeeTasks')
                             ->label('الموظفون المنفذون وتقييمهم')
-                            ->relationship('employeeTasks')
+                            ->relationship('employeeTasks') // علاقة HasMany مع EmployeeTask
                             ->schema([
                                 Select::make('employee_id')
                                     ->label('الموظف')
@@ -213,6 +230,7 @@ class SanitationFacilityTaskResource extends Resource
                                         ->pluck('name', 'id'))
                                     ->required()
                                     ->searchable()
+                                    ->native(false)
                                     ->columnSpan(2),
 
                                 Select::make('employee_rating')
@@ -224,10 +242,12 @@ class SanitationFacilityTaskResource extends Resource
                                         4 => '★★★★',
                                         5 => '★★★★★ (ممتاز)',
                                     ])
-                                    ->required(),
+                                    ->required()
+                                    ->native(false),
                             ])
                             ->columns(3)
-                            ->createItemButtonLabel('إضافة منفذ جديد'),
+                            ->createItemButtonLabel('إضافة منفذ جديد')
+                            ->defaultItems(0), // لتجنب إضافة عنصر فارغ تلقائياً
                     ]),
 
                 Section::make('المرفقات')
@@ -240,7 +260,8 @@ class SanitationFacilityTaskResource extends Resource
                             ->multiple()
                             ->directory('sanitation_facility_tasks/before')
                             ->imageEditor()
-                            ->columnSpan(1),
+                            ->columnSpan(1)
+                            ->helperText('يمكنك رفع عدة صور توضح حالة الموقع قبل بدء المهمة.'),
 
                         FileUpload::make('after_images')
                             ->label('صور بعد التنفيذ')
@@ -248,7 +269,8 @@ class SanitationFacilityTaskResource extends Resource
                             ->multiple()
                             ->directory('sanitation_facility_tasks/after')
                             ->imageEditor()
-                            ->columnSpan(1),
+                            ->columnSpan(1)
+                            ->helperText('يمكنك رفع عدة صور توضح حالة الموقع بعد انتهاء المهمة.'),
                     ])
                     ->columns(2),
             ]);
@@ -278,7 +300,7 @@ class SanitationFacilityTaskResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('shift')
-                    ->label('الوجبة') // تم تغيير التسمية من "الوجبة" إلى "الوردية"
+                    ->label('الوجبة')
                     ->toggleable(),
 
                 Tables\Columns\BadgeColumn::make('status')
@@ -289,26 +311,144 @@ class SanitationFacilityTaskResource extends Resource
                         'danger' => 'ملغى',
                     ]),
 
-                // ✅ عرض عمود working_hours في الجدول
                 Tables\Columns\TextColumn::make('working_hours')
                     ->label('ساعات العمل')
                     ->numeric()
                     ->sortable()
                     ->toggleable(),
+                
+                // عرض الموظف الذي أنشأ المهمة والموظف الذي عدلها
+                Tables\Columns\TextColumn::make('creator.name')
+                    ->label('أنشأها المشرف')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true), // مخفي افتراضياً في الجدول
+                Tables\Columns\TextColumn::make('editor.name')
+                    ->label('عدّلها المشرف')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true), // مخفي افتراضياً في الجدول
 
                 Tables\Columns\TextColumn::make('employeeTasks.employee.name')
-                    ->label('المنفذون')
+                    ->label('المنفذون والتقييم')
                     ->listWithLineBreaks()
                     ->limitList(2)
-                    ->expandableLimitedList(),
+                    ->expandableLimitedList()
+                    ->formatStateUsing(function ($state, $record) {
+                        $summary = '';
+                        foreach ($record->employeeTasks as $employeeTask) {
+                            $employeeName = $employeeTask->employee->name ?? 'غير معروف';
+                            $rating = $employeeTask->employee_rating;
+                            $ratingText = match ((int)$rating) { // تأكد أن التقييم عدد صحيح
+                                1 => 'ضعيف ★',
+                                2 => '★★',
+                                3 => 'متوسط ★★★',
+                                4 => '★★★★',
+                                5 => 'ممتاز ★★★★★',
+                                default => 'غير مقيم',
+                            };
+                            $summary .= '<div class="flex items-center gap-1">' . $employeeName . ' (<span class="font-bold">' . $ratingText . '</span>)</div>';
+                        }
+                        return new HtmlString($summary);
+                    }),
 
-                // ✅ إضافة عرض حقل الهدف المرتبط في الجدول
+
                 Tables\Columns\TextColumn::make('relatedGoal.goal_text')
                     ->label('الهدف المرتبط')
                     ->words(10)
                     ->wrap()
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                Tables\Columns\TextColumn::make('unit.name')
+                    ->label('الوحدة')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\ImageColumn::make('before_images')
+                    ->label('صور قبل')
+                    ->height(80)
+                    ->width(80)
+                    ->circular()
+                    ->stacked()
+                    ->limit(3)
+                    ->limitedRemainingText()
+                    ->toggleable(),
+
+                Tables\Columns\ImageColumn::make('after_images')
+                    ->label('صور بعد')
+                    ->height(80)
+                    ->width(80)
+                    ->circular()
+                    ->stacked()
+                    ->limit(3)
+                    ->limitedRemainingText()
+                    ->toggleable(),
+                
+                // أعمدة العدادات الخاصة بالمنشآت الصحية (مخفية افتراضياً)
+                Tables\Columns\TextColumn::make('seats_count')
+                    ->label('المقاعد')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('mirrors_count')
+                    ->label('المرايا')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('mixers_count')
+                    ->label('الخلاطات')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('doors_count')
+                    ->label('الأبواب')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('sinks_count')
+                    ->label('المغاسل')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('toilets_count')
+                    ->label('الحمامات')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                // عرض الموارد المستخدمة
+                Tables\Columns\TextColumn::make('resources_used')
+                    ->label('الموارد المستخدمة')
+                    ->formatStateUsing(function (?array $state): HtmlString {
+                        if (empty($state)) {
+                            return new HtmlString('لا توجد موارد');
+                        }
+                        $items = [];
+                        foreach ($state as $resource) {
+                            $name = $resource['name'] ?? 'غير محدد';
+                            $quantity = $resource['quantity'] ?? 'غير محدد';
+                            $unit = $resource['unit'] ?? '';
+                            $items[] = "{$name} ({$quantity} {$unit})";
+                        }
+                        return new HtmlString(implode('<br>', $items));
+                    })
+                    ->listWithLineBreaks()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('تاريخ الإنشاء')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->label('تاريخ آخر تحديث')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('date', 'desc')
             ->filters([
@@ -317,7 +457,8 @@ class SanitationFacilityTaskResource extends Resource
                     ->options([
                         'إدامة' => 'إدامة',
                         'صيانة' => 'صيانة',
-                    ]),
+                    ])
+                    ->native(false),
 
                 Tables\Filters\SelectFilter::make('status')
                     ->label('حالة المهمة')
@@ -325,15 +466,17 @@ class SanitationFacilityTaskResource extends Resource
                         'مكتمل' => 'مكتمل',
                         'قيد التنفيذ' => 'قيد التنفيذ',
                         'ملغى' => 'ملغى',
-                    ]),
+                    ])
+                    ->native(false),
 
                 Tables\Filters\SelectFilter::make('shift')
-                    ->label('الوجبة') // تم تغيير التسمية من "الوجبة" إلى "الوردية"
+                    ->label('الوجبة')
                     ->options([
                         'صباحي' => 'صباحي',
                         'مسائي' => 'مسائي',
                         'ليلي' => 'ليلي',
-                    ]),
+                    ])
+                    ->native(false),
 
                 Tables\Filters\SelectFilter::make('facility_name')
                     ->label('المرفق الصحي')
@@ -350,7 +493,32 @@ class SanitationFacilityTaskResource extends Resource
                         'صحية 4 نساء' => 'صحية 4 نساء',
                         'المجاميع الكبيرة رجال' => 'المجاميع الكبيرة رجال',
                         'المجاميع الكبيرة نساء' => 'المجاميع الكبيرة نساء',
-                    ]),
+                    ])
+                    ->native(false),
+
+                Tables\Filters\SelectFilter::make('employee_id')
+                    ->label('الموظف المنفذ')
+                    ->relationship('employeeTasks.employee', 'name') // العلاقة الصحيحة
+                    ->searchable()
+                    ->preload()
+                    ->native(false),
+
+                Tables\Filters\Filter::make('date_range')
+                    ->form([
+                        DatePicker::make('from_date')->label('من تاريخ')->native(false)->displayFormat('Y-m-d'),
+                        DatePicker::make('to_date')->label('إلى تاريخ')->native(false)->displayFormat('Y-m-d'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from_date'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('date', '>=', $date),
+                            )
+                            ->when(
+                                $data['to_date'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('date', '<=', $date),
+                            );
+                    })
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
@@ -358,15 +526,18 @@ class SanitationFacilityTaskResource extends Resource
 
                 Tables\Actions\EditAction::make()
                     ->label('تعديل'),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(), // أعدت هذا كإجراء افتراضي
+                Tables\Actions\DeleteBulkAction::make(),
                 FilamentExportBulkAction::make('export')
-                    ->label('تصدير البيانات'),
+                    ->label('تصدير المحدد'),
             ])
             ->headerActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('إنشاء مهمة جديدة'),
                 FilamentExportHeaderAction::make('export')
-                    ->label('تصدير البيانات'),
+                    ->label('تصدير الكل'),
             ]);
     }
 
@@ -381,7 +552,7 @@ class SanitationFacilityTaskResource extends Resource
     {
         // تعيين unit_id لوحدة "المنشآت الصحية" (ID: 2) تلقائياً
         // تأكد أن الـ ID=2 هو فعلاً لوحدة المنشآت الصحية في جدول units
-        $data['unit_id'] = 2;
+        $data['unit_id'] = 2; // أو يمكن استخدام Unit::where('name', 'وحدة المنشآت الصحية')->first()?->id
         return $data;
     }
 

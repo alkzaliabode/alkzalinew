@@ -22,6 +22,11 @@ return new class extends Migration
             $table->text('details'); // تفاصيل المهمة
             $table->enum('status', ['مكتمل', 'قيد التنفيذ', 'ملغى']); // الحالة
             $table->text('notes')->nullable(); // ملاحظات
+
+            // ✅ إضافة حقول تتبع المستخدم الذي قام بالإنشاء والتعديل
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null')->comment('معرف المستخدم الذي أنشأ المهمة'); // من قام بإنشاء المهمة
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null')->comment('معرف المستخدم الذي عدل المهمة آخر مرة'); // من قام بتعديل المهمة آخر مرة
+
             // 🔗 روابط الأهداف والتقدم
             $table->foreignId('related_goal_id')->nullable()->constrained('unit_goals')->nullOnDelete();
             $table->float('progress')->default(0); // نسبة الإنجاز

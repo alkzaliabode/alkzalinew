@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth; // تم إضافة هذا الاستيراد
+use App\Models\User; // ✅ تم إعادة هذا الاستيراد
+
 use App\Models\UnitGoal;
 use App\Models\TaskImageReport;
 use App\Models\ActualResult;
@@ -38,6 +41,8 @@ class SanitationFacilityTask extends Model
         'doors_count',
         'toilets_count',
         'working_hours'
+        // لا تضع 'created_by' أو 'updated_by' هنا في الـ $fillable
+        // لأننا نملأها يدوياً عبر أحداث الموديل لضمان الأمان
     ];
 
     protected $casts = [
@@ -69,11 +74,36 @@ class SanitationFacilityTask extends Model
         return $this->belongsTo(UnitGoal::class, 'related_goal_id');
     }
 
+    // علاقة مع المستخدم الذي أنشأ المهمة
+    // الآن يمكن استخدام User::class بدلاً من \App\Models\User::class بفضل الاستيراد
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // علاقة مع المستخدم الذي عدّل المهمة آخر مرة
+    // الآن يمكن استخدام User::class بدلاً من \App\Models\User::class بفضل الاستيراد
+    public function editor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
     protected static function booted()
     {
-        // ✅ التعيين التلقائي لـ unit_id = 2 قبل الإنشاء
+        // التعيين التلقائي لـ unit_id = 2 قبل الإنشاء
         static::creating(function ($task) {
             $task->unit_id = $task->unit_id ?? 2;
+            // تعيين created_by بمعرف المستخدم الحالي عند الإنشاء
+            if (Auth::check()) {
+                $task->created_by = Auth::id();
+            }
+        });
+
+        // تعيين updated_by بمعرف المستخدم الحالي عند الحفظ (إنشاء أو تحديث)
+        static::saving(function ($task) {
+            if (Auth::check()) {
+                $task->updated_by = Auth::id();
+            }
         });
 
         static::created(function ($task) {
@@ -177,9 +207,9 @@ class SanitationFacilityTask extends Model
 
     protected static function cleanupTaskImages($task)
     {
-        $report = TaskImageReport::where('task_id', $task->id)
-                                 ->where('unit_type', 'health')
-                                 ->first();
+        $report = TaskImageReport::where('task_id', $this->id)
+                                    ->where('unit_type', 'health')
+                                    ->first();
 
         if ($report) {
             $report->deleteRelatedImages();
@@ -190,16 +220,16 @@ class SanitationFacilityTask extends Model
     public function getBeforeImagesUrlsAttribute(): array
     {
         $report = TaskImageReport::where('task_id', $this->id)
-                                 ->where('unit_type', 'health')
-                                 ->first();
+                                    ->where('unit_type', 'health')
+                                    ->first();
         return $report ? $report->getOriginalUrlsForTable($report->before_images) : [];
     }
 
     public function getAfterImagesUrlsAttribute(): array
     {
         $report = TaskImageReport::where('task_id', $this->id)
-                                 ->where('unit_type', 'health')
-                                 ->first();
+                                    ->where('unit_type', 'health')
+                                    ->first();
         return $report ? $report->getOriginalUrlsForTable($report->after_images) : [];
     }
 }

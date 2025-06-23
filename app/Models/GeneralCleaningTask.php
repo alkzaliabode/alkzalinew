@@ -5,15 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB; // DB Facade لا يزال مفيدًا للاستعلامات المعقدة
-use Illuminate\Support\Facades\Storage; // لا يزال مفيدًا في حال احتجنا للتخزين المباشر
+use Illuminate\Support\Facades\Auth; // ✅ مهم: تم إضافة استيراد Auth facade
 
+// DB Facade و Storage Facade تم إزالتهما لأنها غير مستخدمة مباشرة في هذا الموديل
+// use Illuminate\Support\Facades\DB;
+// use Illuminate\Support\Facades\Storage;
+
+use App\Models\User;
 use App\Models\UnitGoal;
 use App\Models\TaskImageReport;
 use App\Models\ActualResult;
-use App\Models\MonthlyGeneralCleaningSummary; // ✅ تم إضافة هذا الاستيراد للموديل الجديد
+use App\Models\MonthlyGeneralCleaningSummary;
 
 class GeneralCleaningTask extends Model
 {
@@ -25,6 +28,7 @@ class GeneralCleaningTask extends Model
         'carpets_count', 'blankets_count', 'beds_count', 'beneficiaries_count',
         'filled_trams_count', 'carpets_laid_count', 'large_containers_count',
         'small_containers_count', 'maintenance_details',
+        // لا تضع 'created_by' أو 'updated_by' هنا لأننا نملأها يدوياً عبر أحداث الموديل
     ];
 
     protected $casts = [
@@ -49,37 +53,61 @@ class GeneralCleaningTask extends Model
         return $this->belongsTo(UnitGoal::class, 'related_goal_id');
     }
 
-   protected static function booted()
-{
-    static::creating(function ($task) {
-        $task->unit_id = $task->unit_id ?? 1; // 👈 التعيين التلقائي قبل الإنشاء
-    });
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 
-    static::created(function ($task) {
-        self::recalculateSummaries($task);
-        self::handleTaskImageReport($task);
-        if ($task->status === 'مكتمل' && $task->unit_id && $task->date) {
-            ActualResult::recalculateForUnitAndDate($task->unit_id, $task->date);
-        }
-    });
+    public function editor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
 
-    static::updated(function ($task) {
-        self::recalculateSummaries($task);
-        self::handleTaskImageReport($task);
-        if ($task->isDirty('status') && $task->status === 'مكتمل') {
-            ActualResult::recalculateForUnitAndDate($task->unit_id, $task->date);
-        }
-    });
+    protected static function booted()
+    {
+        // عند إنشاء مهمة جديدة (قبل حفظها في قاعدة البيانات لأول مرة)
+        static::creating(function ($task) {
+            $task->unit_id = $task->unit_id ?? 1; // التعيين التلقائي لـ unit_id
 
-    static::deleted(function ($task) {
-        self::recalculateSummaries($task);
-        self::cleanupTaskImages($task);
-        if ($task->unit_id && $task->date) {
-            ActualResult::recalculateForUnitAndDate($task->unit_id, $task->date);
-        }
-    });
-}
+            // ✅ تعيين created_by بمعرف المستخدم الحالي
+            if (Auth::check()) {
+                $task->created_by = Auth::id();
+            }
+        });
 
+        // عند حفظ المهمة (سواء كانت إنشاء لأول مرة أو تحديث موجود)
+        static::saving(function ($task) {
+            // ✅ تعيين updated_by بمعرف المستخدم الحالي
+            if (Auth::check()) {
+                $task->updated_by = Auth::id();
+            }
+        });
+
+        // الأحداث الأخرى التي كانت موجودة مسبقاً
+        static::created(function ($task) {
+            self::recalculateSummaries($task);
+            self::handleTaskImageReport($task);
+            if ($task->status === 'مكتمل' && $task->unit_id && $task->date) {
+                ActualResult::recalculateForUnitAndDate($task->unit_id, $task->date);
+            }
+        });
+
+        static::updated(function ($task) {
+            self::recalculateSummaries($task);
+            self::handleTaskImageReport($task);
+            if ($task->isDirty('status') && $task->status === 'مكتمل') {
+                ActualResult::recalculateForUnitAndDate($task->unit_id, $task->date);
+            }
+        });
+
+        static::deleted(function ($task) {
+            self::recalculateSummaries($task);
+            self::cleanupTaskImages($task);
+            if ($task->unit_id && $task->date) {
+                ActualResult::recalculateForUnitAndDate($task->unit_id, $task->date);
+            }
+        });
+    }
 
     protected static function recalculateSummaries($task)
     {
@@ -93,8 +121,6 @@ class GeneralCleaningTask extends Model
         $date = Carbon::parse($task->date);
         $month = $date->format('Y-m');
 
-        // ✅ Generate a unique ID for the primary key of the summary table
-        // It should be a combination of month, location, and task type
         $summaryId = md5("{$month}-{$location}-{$taskType}");
 
         $totals = self::whereYear('date', $date->year)
@@ -119,10 +145,9 @@ class GeneralCleaningTask extends Model
             ')
             ->first();
 
-        // ✅ تم التعديل هنا: استخدام موديل MonthlyGeneralCleaningSummary بدلاً من DB::table
         MonthlyGeneralCleaningSummary::updateOrCreate(
             [
-                'id' => $summaryId, // ✅ Pass the generated ID here
+                'id' => $summaryId,
                 'month' => $month,
                 'location' => $location,
                 'task_type' => $taskType,
@@ -141,8 +166,6 @@ class GeneralCleaningTask extends Model
                 'total_large_containers' => $totals->total_large_containers ?? 0,
                 'total_small_containers' => $totals->total_small_containers ?? 0,
                 'total_tasks' => $totals->total_tasks_count_for_summary ?? 0,
-                // 'updated_at' و 'created_at' سيتم التعامل معهما تلقائياً
-                // بعد إزالة public $timestamps = false; من MonthlyGeneralCleaningSummary model
             ]
         );
     }
@@ -178,39 +201,31 @@ class GeneralCleaningTask extends Model
         }
     }
 
-    protected static function cleanupTaskImages($task)
-    {
-        // ✅ استخدام موديل TaskImageReport لتحديد الصور المرتبطة وحذفها
-        $report = TaskImageReport::where('task_id', $task->id)
-                                 ->where('unit_type', 'cleaning')
-                                 ->first();
-
-        if ($report) {
-            $report->deleteRelatedImages(); // استدعاء الدالة من TaskImageReport
-            $report->delete(); // حذف سجل التقرير من جدول TaskImageReport
-        }
-    }
-
-    // Accessors for image URLs
-    // ✅ تم التعديل هنا: استخدام TaskImageReport لجلب URLs للصور
     public function getBeforeImagesUrlsAttribute(): array
     {
         $report = TaskImageReport::where('task_id', $this->id)
-                                 ->where('unit_type', 'cleaning')
-                                 ->first();
+                                    ->where('unit_type', 'cleaning')
+                                    ->first();
         return $report ? $report->getOriginalUrlsForTable($report->before_images) : [];
     }
 
-    // ✅ تم التعديل هنا: استخدام TaskImageReport لجلب URLs للصور
     public function getAfterImagesUrlsAttribute(): array
     {
         $report = TaskImageReport::where('task_id', $this->id)
-                                 ->where('unit_type', 'cleaning')
-                                 ->first();
+                                    ->where('unit_type', 'cleaning')
+                                    ->first();
         return $report ? $report->getOriginalUrlsForTable($report->after_images) : [];
     }
 
-    // ✅ تم إزالة دالة convertToImageUrls() لأنها لم تعد مستخدمة
-    // حيث أصبحت getBeforeImagesUrlsAttribute و getAfterImagesUrlsAttribute
-    // تعتمدان على TaskImageReport::getOriginalUrlsForTable()
+    protected static function cleanupTaskImages($task)
+    {
+        $report = TaskImageReport::where('task_id', $task->id)
+                                    ->where('unit_type', 'cleaning')
+                                    ->first();
+
+        if ($report) {
+            $report->deleteRelatedImages();
+            $report->delete();
+        }
+    }
 }

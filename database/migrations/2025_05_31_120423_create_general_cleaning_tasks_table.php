@@ -20,10 +20,16 @@ return new class extends Migration
             // عمود تفاصيل الصيانة
             $table->text('maintenance_details')->nullable(); // تفاصيل الصيانة (مثلاً: ما تم إصلاحه، المشاكل الموجودة)
 
+            // حقول تتبع المستخدم الذي قام بالإنشاء والتعديل
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null')->comment('معرف المستخدم الذي أنشأ المهمة'); // من قام بإنشاء المهمة
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null')->comment('معرف المستخدم الذي عدل المهمة آخر مرة'); // من قام بتعديل المهمة آخر مرة
+
             $table->integer('quantity')->nullable(); // الكمية
             $table->enum('status', ['مكتمل', 'قيد التنفيذ', 'ملغى']); // الحالة
             $table->text('notes')->nullable(); // ملاحظات
             $table->string('responsible_persons')->nullable(); // الأشخاص المسؤولون
+            $table->float('working_hours')->nullable(); // ساعات العمل (تم نقلها هنا من ملاحظاتك السابقة)
+
 
             // 🔗 روابط الأهداف والتقدم
             $table->foreignId('related_goal_id')->nullable()->constrained('unit_goals')->onDelete('set null'); // الهدف المرتبط

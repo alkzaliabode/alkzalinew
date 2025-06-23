@@ -10,13 +10,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Employee extends Authenticatable
 {
     protected $fillable = [
-        'name', 
-        'email', 
-        'password', 
-        'job_title', 
-        'unit_id', // يجب أن يكون اسم الحقل unit_id إذا كان هناك علاقة وحدات
-        'role',
-        'is_active'
+         'name',
+    'email',
+    'password',
+    'job_title',
+    'unit_id',
+    'role',
+    'is_active',
+    'employee_number',
+        
     ];
 
     protected $hidden = [
