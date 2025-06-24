@@ -58,6 +58,23 @@ class SuperAdminSeeder extends Seeder
 
         // 3. ربط جميع الصلاحيات المولدة (الآن هي الصلاحيات الصحيحة) بالدور
         $superAdminRole->syncPermissions(Permission::all());
+        
+        // تأكد من وجود صلاحيات النظافة العامة
+        $generalCleaningPermissions = [
+            'view_general_cleaning_task',
+            'view_any_general_cleaning_task',
+            'create_general_cleaning_task',
+            'update_general_cleaning_task',
+            'delete_general_cleaning_task',
+            'delete_any_general_cleaning_task',
+        ];
+        
+        foreach ($generalCleaningPermissions as $permName) {
+            Permission::firstOrCreate(['name' => $permName, 'guard_name' => 'web']);
+        }
+        
+        // تأكد مرة أخرى من أن دور Super Admin لديه جميع الصلاحيات
+        $superAdminRole->syncPermissions(Permission::all());
 
         // 4. إنشاء أو جلب المستخدم Rawan
         $user = User::firstOrCreate(
@@ -72,5 +89,8 @@ class SuperAdminSeeder extends Seeder
         if (!$user->hasRole('super_admin')) {
             $user->assignRole($superAdminRole);
         }
+        
+        // تعيين الصلاحيات مباشرة للمستخدم كإجراء إضافي للتأكد
+        $user->syncPermissions(Permission::all());
     }
 }
