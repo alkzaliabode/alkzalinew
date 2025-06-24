@@ -61,12 +61,6 @@ class EmployeeResource extends Resource
             ->placeholder('مثال: EMP-001'),
 
 
-
-
-
-
-
-
             
 
             Forms\Components\Select::make('role')

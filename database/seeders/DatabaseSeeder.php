@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             MonthlySanitationSummarySeeder::class,
             EmployeeSeeder::class,
             TaskSeeder::class, // تأكد من
+            ServiceTaskSeeder::class, // تأكد من استدعاء ServiceTaskSeeder
         ]);
 
         // إذا كنت تستدعي المستخدم Rawan هنا أيضًا، فقم بإزالته

@@ -170,10 +170,12 @@ return [
 
         // Application Service Providers...
         App\Providers\AppServiceProvider::class,
+        
         // App\Providers\AuthServiceProvider::class, // تم حذفه سابقاً
         // App\Providers\EventServiceProvider::class, // تم حذفه سابقاً
         // App\Providers\RouteServiceProvider::class, // <--- تم حذف هذا السطر المسبب للمشكلة
         App\Providers\Filament\AdminPanelProvider::class,
+
     ],
 
     /*

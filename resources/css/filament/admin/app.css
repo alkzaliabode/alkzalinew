@@ -1,0 +1,9 @@
+
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* عناصر أخرى خاصة بك بعد ذلك يمكنك هنا إضافة أي CSS */

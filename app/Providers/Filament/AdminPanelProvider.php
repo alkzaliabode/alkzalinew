@@ -32,10 +32,8 @@ class AdminPanelProvider extends PanelProvider
     protected static ?string $title = 'لوحة الإدارة'; // عنوان لوحة الإدارة
     protected static ?string $description = 'لوحة الإدارة لإدارة الأداء والنتائج'; // وصف لوحة الإدارة
     protected static ?string $icon = 'heroicon-o-cog-6-tooth'; // أيقونة لوحة الإدارة
-    protected static ?string $logo = 'resources/images/logo.png'; // مسار الشعار الذي سيظهر في لوحة الإدارة
+    protected static ?string $logo = 'images/logo.png'; // المسار يجب أن يكون نسبة إلى مجلد 'public'
     protected static ?string $logoDark = 'resources/images/logo-dark.png'; // مسار الشعار الداكن
-    protected static ?string $favicon = 'resources/images/favicon.ico'; // مسار أيقونة الموقع (favicon)
-    protected static ?string $faviconDark = 'resources/images/favicon-dark.ico'; // مسار أيقونة الموقع الداكنة
     protected static ?string $defaultLocale = 'ar'; // تعيين اللغة الافتراضية للوحة الإدارة إلى العربية
 
     /**
@@ -68,6 +66,7 @@ class AdminPanelProvider extends PanelProvider
                 'warning' => Color::Yellow,  // ✅ (اختياري) يمكنك تغيير لون التحذير لتمييزه عن الأساسي
             ])
             // تطبيق الثيم المخصص لـ Filament من ملف CSS.
+            
             ->viteTheme('resources/css/filament/admin/theme.css')
             // اكتشاف وتسجيل جميع الموارد (Resources) تلقائيًا.
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
@@ -75,8 +74,10 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             // تسجيل الصفحات المحددة يدويًا، مثل لوحة القيادة المخصصة.
             ->pages([
+                
                 \App\Filament\Pages\Dashboard::class, // صفحة لوحة القيادة التي ستعرض البطاقات.
                     \App\Filament\Pages\ProfessionalImageReports::class,  // إضافة صفحة التقارير المصورة
+                \App\Filament\Pages\ServiceTasksBoardPage::class, // صفحة لوحة مهام الخدمة.
 
             ])
             // اكتشاف وتسجيل جميع الـ Widgets تلقائيًا.
