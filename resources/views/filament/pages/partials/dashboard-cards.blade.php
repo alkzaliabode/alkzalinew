@@ -30,17 +30,17 @@
 
     {{-- بطاقة الحالة اليومية --}}
     <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
-        @include('filament.pages.partials.cards.daily-status')
+        @include('filament.pages.partials.cards.Daily-Status')
     </div>
 
     {{-- بطاقة الاستبيان --}}
     <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
-        @include('filament.pages.partials.cards.survey')
+        @include('filament.pages.partials.cards.Survey')
     </div>
 
     {{-- بطاقة هدف الوحدة --}}
     <div class="square-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition duration-300">
-        @include('filament.pages.partials.cards.unit-goal')
+        @include('filament.pages.partials.cards.Unit-Goal')
     </div>
 
     {{-- بطاقة الموارد --}}
