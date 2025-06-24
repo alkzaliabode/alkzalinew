@@ -51,7 +51,7 @@ class EmployeeResource extends Resource
                 ->label('الوحدة'),
 
 
-                
+
                 Forms\Components\TextInput::make('employee_number')
             ->label('الرقم الوظيفي')
             ->required()
@@ -60,6 +60,14 @@ class EmployeeResource extends Resource
             ->autofocus()
             ->placeholder('مثال: EMP-001'),
 
+
+
+
+
+
+
+
+            
 
             Forms\Components\Select::make('role')
                 ->options([
