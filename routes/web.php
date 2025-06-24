@@ -15,6 +15,6 @@ Route::get('/print-image-report/{record}', function (TaskImageReport $record) {
 })->name('print.image.report');
     
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/admin/login');
 });
 
